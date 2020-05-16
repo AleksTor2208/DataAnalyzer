@@ -14,18 +14,11 @@ namespace MarketDataLoader
    class HtmlDocumentReader
    {
       private HtmlDocument _doc = new HtmlDocument();
-      private readonly HtmlNodeCollection _tables;
+      private HtmlNodeCollection _tables;
 
-      public HtmlDocumentReader(string inputHtml)
+      internal List<HistoricalOrdersDto> ReadHistoricalOrders()
       {
-         _doc.LoadHtml(File.ReadAllText(inputHtml));
-         _tables = _doc.DocumentNode.SelectNodes("//table");
-      }
-
-      internal List<HistoricalOrdersDto> ReadHistoricalOrders(string htmlPath)
-      {
-         var tables = _doc.DocumentNode.SelectNodes("//table");
-         var tableWithHistoricalOrders = GetTableWithHistoricOrders(tables).InnerHtml;
+         var tableWithHistoricalOrders = GetTableWithHistoricOrders(_tables).InnerHtml;
          string cleanedTable = Regex.Replace(tableWithHistoricalOrders, @"\t|\n|\r", "");
          var splittedTable = SplitRows(cleanedTable); 
          var historicalOrders = new List<HistoricalOrdersDto>();
@@ -37,6 +30,12 @@ namespace MarketDataLoader
             historicalOrders.Add(historicalOrderConverter.Convert(row));
          }
          return historicalOrders;
+      }
+
+      internal void SelectTablesFromFile(string htmlFile)
+      {
+         _doc.LoadHtml(File.ReadAllText(htmlFile));
+         _tables = _doc.DocumentNode.SelectNodes("//table");
       }
 
       internal Dictionary<string, string> ReadFromHtmlTable(TableType tableIndex)
@@ -64,6 +63,7 @@ namespace MarketDataLoader
                 StringSplitOptions.RemoveEmptyEntries);
       }
 
+      //deprecated
       internal Dictionary<string, string> ReadOrdersInfo()
       {
          var tables = _doc.DocumentNode.SelectNodes("//table");
