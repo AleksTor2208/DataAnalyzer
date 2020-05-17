@@ -25,16 +25,24 @@ namespace MarketDataLoader
          _db = dbClient.GetDatabase("data");
       }
 
-      public void LoadOrders(IEnumerable<BsonDocument> bsonDocuments)
+      public void LoadOrders(BsonDocument bsonDocument)
       {
          var OrdersDb = _db.GetCollection<BsonDocument>(OrdersTableName);
-         OrdersDb.InsertMany(bsonDocuments);
+         OrdersDb.InsertOne(bsonDocument);
       }
 
       public void LoadOrdersInfo(BsonDocument ordersInfo)
       {
          var OrdersInfoDb = _db.GetCollection<BsonDocument>(OrdersInfoTableName);
          OrdersInfoDb.InsertOne(ordersInfo);
+      }
+
+      public void CleanOrdersTable()
+      {
+
+         //var OrdersDb = _db.GetCollection<BsonDocument>(OrdersTableName);
+         //FilterDefinition<TDocument> filter = 
+         //OrdersDb.DeleteMany();
       }
    }
 }

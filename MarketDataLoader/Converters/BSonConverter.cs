@@ -6,12 +6,12 @@ namespace MarketDataLoader.Converters
 {
    class BSonConverter
    {
-      internal static IEnumerable<BsonDocument> GenerateBSonDocuments(List<HistoricalOrdersDto> historicalOrders)
+      internal static BsonDocument GenerateHistoricalOrdersAsBSon(List<HistoricalOrdersDto> historicalOrders, Dictionary<string, string> parameters)
       {
-         var doc = new BsonDocument();
-         return historicalOrders.Select(order =>
+         var bsonDocument = new BsonDocument();
+         foreach (var order in historicalOrders)
          {
-            return new BsonDocument()
+            var bsonRow = new BsonDocument
             {
                {"Label", order.Label},
                {"Amount", order.Amount},
@@ -24,7 +24,16 @@ namespace MarketDataLoader.Converters
                {"CloseDate", order.CloseDate},
                {"Comment", order.Comment},
             };
-         });
+            bsonDocument.AddRange(bsonRow);
+         }
+         var parametersBSon = new BsonDocument();
+         //enrich with parameters
+         foreach (var row in parameters)
+         {
+            parametersBSon.Add(row.Key, row.Value);
+         }
+         bsonDocument.Add("Parameters", parametersBSon);
+         return bsonDocument;
       }
 
       internal static BsonDocument GenerateOrdersInfoDocument(Dictionary<string, string> account, 

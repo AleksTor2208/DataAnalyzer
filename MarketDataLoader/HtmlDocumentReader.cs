@@ -69,7 +69,6 @@ namespace MarketDataLoader
          var tables = _doc.DocumentNode.SelectNodes("//table");
          var ordersTableInfo = new Dictionary<string, string>();
          int orderInfoTablesIndex = 3;
-         int parameterIndex = 1;
          for (int i = 0; i < orderInfoTablesIndex; i++)
          {
             var currentTable = Regex.Replace(tables[i].InnerHtml, @"\t|\n|\r", "");

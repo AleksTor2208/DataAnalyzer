@@ -2,7 +2,9 @@
 using log4net.Appender;
 using log4net.Repository;
 using MarketDataLoader.Converters;
+using MongoDB.Bson;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -34,19 +36,19 @@ namespace MarketDataLoader
             _htmlReader.SelectTablesFromFile(htmlFile);
             Log.InfoFormat("Start reading from html file. Input path is: {0}", htmlFile);
 
-            var historicalOrders = _htmlReader.ReadHistoricalOrders();
-            var bsonHistoricalOrders = BSonConverter.GenerateBSonDocuments(historicalOrders);
-
             var accountInfo = _htmlReader.ReadFromHtmlTable(TableType.AccountInfo);
             var paramsInfo = _htmlReader.ReadFromHtmlTable(TableType.ParamsInfo);
             var detailsInfo = _htmlReader.ReadFromHtmlTable(TableType.DetailsInfo);
             var ordersInfo = BSonConverter.GenerateOrdersInfoDocument(accountInfo, paramsInfo, detailsInfo);
 
+            var historicalOrders = _htmlReader.ReadHistoricalOrders();
+            var historicalOrdersBson = BSonConverter.GenerateHistoricalOrdersAsBSon(historicalOrders, paramsInfo);
+
             try
             {
                Log.InfoFormat("Start writing data from from {0} to mongo.", htmlFile);
                _dbConnection.LoadOrdersInfo(ordersInfo);
-               _dbConnection.LoadOrders(bsonHistoricalOrders);
+               _dbConnection.LoadOrders(historicalOrdersBson);
                Log.InfoFormat("Processing {0} file finished successfully.", htmlFile);
             }
             catch (Exception e)
@@ -54,8 +56,12 @@ namespace MarketDataLoader
                Log.ErrorFormat("Error during {0} file loading. Error message: {1}", htmlFile, e.Message);
                throw;
             }
-            
          }
+      }
+
+      private void EnrichOrdersWithParams(IEnumerable<BsonDocument> bsonHistoricalOrders, Dictionary<string, string> paramsInfo)
+      {
+         
       }
 
       private static string ValidateAndSetPath(string[] args)
@@ -85,7 +91,7 @@ namespace MarketDataLoader
       {
          log4net.Config.XmlConfigurator.Configure();
          var assemblyDir = Path.GetDirectoryName(
-            new System.Uri(System.Reflection.Assembly.GetExecutingAssembly().CodeBase).LocalPath);
+            new Uri(System.Reflection.Assembly.GetExecutingAssembly().CodeBase).LocalPath);
 
          //get the current logging repository for this application
          ILoggerRepository repository = LogManager.GetRepository();
@@ -99,7 +105,8 @@ namespace MarketDataLoader
             FileAppender fileAppender = appender as FileAppender;
             //set the path to your logDirectory using the original file name defined
             //in configuration
-            fileAppender.File = Path.Combine(assemblyDir, $"..\\..\\..\\log\\{Path.GetFileName(fileAppender.File)}");
+            var logFileName = $"{DateTime.Now.ToString("yyyy-MM-dd")}-{Path.GetFileName(fileAppender.File)}";
+            fileAppender.File = Path.Combine(assemblyDir, $"..\\..\\..\\log\\{logFileName}");
             //make sure to call fileAppender.ActivateOptions() to notify the logging
             //sub system that the configuration for this appender has changed.
             fileAppender.ActivateOptions();
