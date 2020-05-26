@@ -8,6 +8,8 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using MarketDataLoader.Converters;
+using MarketDataLoader.ExtensionMethods;
+using ModelLayer;
 
 namespace MarketDataLoader
 {
@@ -15,6 +17,8 @@ namespace MarketDataLoader
    {
       private HtmlDocument _doc = new HtmlDocument();
       private HtmlNodeCollection _tables;
+
+
 
       internal List<HistoricalOrdersDto> ReadHistoricalOrders()
       {
@@ -34,7 +38,6 @@ namespace MarketDataLoader
 
       internal void SelectTablesFromFile(string htmlFile)
       {
-         _doc.LoadHtml(File.ReadAllText(htmlFile));
          _tables = _doc.DocumentNode.SelectNodes("//table");
       }
 
@@ -45,9 +48,7 @@ namespace MarketDataLoader
          var splittedTable = SplitRows(currentTable);
          foreach (var row in splittedTable)
          {
-            var splittedRow = row.Replace("<th>", "").Split(
-             new[] { "</th>" },
-             StringSplitOptions.RemoveEmptyEntries);
+            var splittedRow = row.Replace("<th>", "").Split("</th>");
             if (!resultDictionary.ContainsKey(splittedRow[0]))
             {
                resultDictionary.Add(splittedRow[0], Regex.Replace(splittedRow[1], @"<td>|</td>", ""));
@@ -56,11 +57,22 @@ namespace MarketDataLoader
          return resultDictionary;
       }
 
+      internal void SelectStartEndDate(string htmlFile, ref DateTime backtestStartDate, ref DateTime backtestEndtDate)
+      {
+         var headerContent = _doc.DocumentNode.SelectNodes("//h1").First().InnerHtml.Split("from");
+         var datesAsArray = headerContent[1].Split("to");
+         backtestStartDate = datesAsArray[0].ToDateTime();
+         backtestEndtDate = datesAsArray[1].ToDateTime();
+      }
+
+      internal void LoadFile(string htmlFile)
+      {
+         _doc.LoadHtml(File.ReadAllText(htmlFile));
+      }
+
       private string[] SplitRows(string table)
       {
-         return table.Replace("<tr>", "").Split(
-                new[] { "</tr>" },
-                StringSplitOptions.RemoveEmptyEntries);
+         return table.Replace("<tr>", "").Split("</tr>");
       }
 
       //deprecated

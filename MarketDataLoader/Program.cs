@@ -15,7 +15,7 @@ namespace MarketDataLoade
 
       static void Main(string[] args)
       {
-         var htmlFileManager = new HtmlFilesManager(args);
+         var htmlFileManager = new HtmlFilesLoadManager(args);
          htmlFileManager.ProcessFiles();
 
          //var folderPath = @"C:\Users\ASUS\Documents\FX\sample_reports\usdjpy";

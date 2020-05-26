@@ -8,7 +8,7 @@ namespace MarketDataLoader
 {
    enum TableType
    {
-      AccountInfo = 0,
+      BasicInfo = 0,
       ParamsInfo = 1,
       DetailsInfo = 2
    }

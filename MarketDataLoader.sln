@@ -7,6 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MarketDataLoader", "MarketD
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StrategyAnalyzer", "StrategyAnalyzer\StrategyAnalyzer.csproj", "{AA5AEA4F-CA0D-441C-8ACA-A7888CAD3453}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MVCDemo", "MVCDemo\MVCDemo.csproj", "{64B25F8E-6C85-4DC7-AD55-6A595B838695}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModelLayer", "ModelLayer\ModelLayer.csproj", "{EEDB9D17-00B1-4AC1-B801-A1E495989E63}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +25,14 @@ Global
 		{AA5AEA4F-CA0D-441C-8ACA-A7888CAD3453}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AA5AEA4F-CA0D-441C-8ACA-A7888CAD3453}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AA5AEA4F-CA0D-441C-8ACA-A7888CAD3453}.Release|Any CPU.Build.0 = Release|Any CPU
+		{64B25F8E-6C85-4DC7-AD55-6A595B838695}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{64B25F8E-6C85-4DC7-AD55-6A595B838695}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{64B25F8E-6C85-4DC7-AD55-6A595B838695}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{64B25F8E-6C85-4DC7-AD55-6A595B838695}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EEDB9D17-00B1-4AC1-B801-A1E495989E63}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EEDB9D17-00B1-4AC1-B801-A1E495989E63}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EEDB9D17-00B1-4AC1-B801-A1E495989E63}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EEDB9D17-00B1-4AC1-B801-A1E495989E63}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

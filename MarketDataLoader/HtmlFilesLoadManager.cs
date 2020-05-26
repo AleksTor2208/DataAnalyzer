@@ -2,18 +2,23 @@
 using log4net.Appender;
 using log4net.Repository;
 using MarketDataLoader.Converters;
+using MarketDataLoader.ExtensionMethods;
+using MathNet.Numerics.Statistics;
+using Microsoft.Health;
 using MongoDB.Bson;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using ModelLayer;
 
 namespace MarketDataLoader
 {
-   class HtmlFilesManager
+   class HtmlFilesLoadManager
    {
       private const string HtmlExtensionFile = "*.html";
       private const string FolderKey = "MarketDataPath";
+      
       private readonly string _folderPath;
       private readonly HtmlDocumentReader _htmlReader;
       private readonly DbConnection _dbConnection;
@@ -21,7 +26,7 @@ namespace MarketDataLoader
               LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
 
-      public HtmlFilesManager(string[] args)
+      public HtmlFilesLoadManager(string[] args)
       {
          _folderPath = ValidateAndSetPath(args);
          _htmlReader = new HtmlDocumentReader();
@@ -33,16 +38,29 @@ namespace MarketDataLoader
       {
          foreach (string htmlFile in Directory.EnumerateFiles(_folderPath, HtmlExtensionFile))
          {
-            _htmlReader.SelectTablesFromFile(htmlFile);
             Log.InfoFormat("Start reading from html file. Input path is: {0}", htmlFile);
+            _htmlReader.LoadFile(htmlFile);
+            _htmlReader.SelectTablesFromFile(htmlFile);
 
-            var accountInfo = _htmlReader.ReadFromHtmlTable(TableType.AccountInfo);
+            DateTime backtestStartDate, backtestEndDate;
+            backtestStartDate = backtestEndDate = new DateTime();
+            _htmlReader.SelectStartEndDate(htmlFile, ref backtestStartDate, ref backtestEndDate);
+
+            var basicInfo = _htmlReader.ReadFromHtmlTable(TableType.BasicInfo);
             var paramsInfo = _htmlReader.ReadFromHtmlTable(TableType.ParamsInfo);
             var detailsInfo = _htmlReader.ReadFromHtmlTable(TableType.DetailsInfo);
-            var ordersInfo = BSonConverter.GenerateOrdersInfoDocument(accountInfo, paramsInfo, detailsInfo);
 
             var historicalOrders = _htmlReader.ReadHistoricalOrders();
             var historicalOrdersBson = BSonConverter.GenerateHistoricalOrdersAsBSon(historicalOrders, paramsInfo);
+
+            var strategyResultsConverter = new StrategyResultsDtoConverter(basicInfo, paramsInfo, detailsInfo, 
+                                                                                 backtestStartDate, backtestEndDate);
+            var resultsDto = strategyResultsConverter.Convert(historicalOrders);
+
+            
+
+
+            var ordersInfo = BSonConverter.GenerateOrdersInfoDocument(basicInfo, paramsInfo, detailsInfo);
 
             try
             {
@@ -57,13 +75,8 @@ namespace MarketDataLoader
                throw;
             }
          }
-      }
-
-      private void EnrichOrdersWithParams(IEnumerable<BsonDocument> bsonHistoricalOrders, Dictionary<string, string> paramsInfo)
-      {
-         
-      }
-
+      }    
+      
       private static string ValidateAndSetPath(string[] args)
       {
          string providedPathName = args[0].Split('=')[0];

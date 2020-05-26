@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using MarketDataLoader.ExtensionMethods;
+using ModelLayer;
 
 namespace MarketDataLoader.Converters
 {
@@ -10,19 +7,18 @@ namespace MarketDataLoader.Converters
    {
       internal HistoricalOrdersDto Convert(string row)
       {
-         var rowAsArray = row.Replace("<td>", "").Split(new[] { "</td>" },
-                                              StringSplitOptions.RemoveEmptyEntries);
+         var rowAsArray = row.Replace("<td>", "").Split("</td>");
          var order = new HistoricalOrdersDto
          {
             Label = rowAsArray[0],
             Amount = rowAsArray[1],
             Direction = rowAsArray[2],
-            OpenPrice = rowAsArray[3],
-            ClosePrice = rowAsArray[4],
-            ProfitLoss = rowAsArray[5],
-            ProfitLossInPips = rowAsArray[6],
-            OpenDate = rowAsArray[7],
-            CloseDate = rowAsArray[8],
+            OpenPrice = rowAsArray[3].ToDouble(),
+            ClosePrice = rowAsArray[4].ToDouble(),
+            ProfitLoss = rowAsArray[5].ToDouble(),
+            ProfitLossInPips = rowAsArray[6].ToDouble(),
+            OpenDate = rowAsArray[7].ToDateTime(),
+            CloseDate = rowAsArray[8].ToDateTime(),
             Comment = rowAsArray[9],
          };
          return order;
