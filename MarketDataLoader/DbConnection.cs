@@ -4,7 +4,9 @@ using System.Configuration;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ModelLayer;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 //using MongoDB.Driver.Builders;
 //using MongoDB.Driver.GridFS;
@@ -17,6 +19,7 @@ namespace MarketDataLoader
       private readonly IMongoDatabase _db;
       private const string OrdersTableName = "Orders";
       private const string OrdersInfoTableName = "OrdersInfo";
+      private const string ResultsInfoTableName = "ResultsInfo";
 
       public DbConnection()
       {
@@ -43,6 +46,52 @@ namespace MarketDataLoader
          //var OrdersDb = _db.GetCollection<BsonDocument>(OrdersTableName);
          //FilterDefinition<TDocument> filter = 
          //OrdersDb.DeleteMany();
+      }
+           
+      internal async Task<long> GetLinkNumber()
+      {
+         var resultInfoTable = _db.GetCollection<BsonDocument>(ResultsInfoTableName);
+         var resultInfoData = await resultInfoTable.Find(_ => true).ToListAsync();
+         var resultAsList = resultInfoData.Select(r => BsonSerializer.Deserialize<StrategyResultsDto>(r));
+
+         var OrdersDb = _db.GetCollection<BsonDocument>(OrdersTableName);
+         var ordersData = await OrdersDb.Find(_ => true).ToListAsync();
+         var ordersAsList = ordersData.Select(r => BsonSerializer.Deserialize<HistoricalOrders>(r));
+
+         long currentLinkNumber;
+         List<long> resultsLinkNumbers;
+         List<long> ordersLinkNumbers;
+         if (resultAsList.Any())
+         {
+            resultsLinkNumbers = resultAsList.Select(r => r.LinkNumber).OrderByDescending(r => r).ToList();
+            currentLinkNumber = resultsLinkNumbers.First() + 1;
+         }
+         else
+         {
+            resultsLinkNumbers = new List<long>();
+            currentLinkNumber = 1;
+         }
+         if (ordersAsList.Any())
+         {
+            ordersLinkNumbers = ordersAsList.Select(r => r.LinkNumber).OrderByDescending(r => r).ToList();
+         }
+         else
+         {
+            ordersLinkNumbers = new List<long>();
+         }
+         
+         while (resultsLinkNumbers.Contains(currentLinkNumber) || ordersLinkNumbers.Contains(currentLinkNumber))
+         {
+            currentLinkNumber++;
+         }
+         return currentLinkNumber;
+      }
+
+      internal async void LoadResults(BsonDocument resultsAsBSon)
+      {
+         var OrdersInfoDb = _db.GetCollection<BsonDocument>(ResultsInfoTableName);       
+
+         OrdersInfoDb.InsertOne(resultsAsBSon);
       }
    }
 }

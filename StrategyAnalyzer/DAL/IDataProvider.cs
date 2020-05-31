@@ -1,10 +1,10 @@
-﻿using StrategyAnalyzer.Model;
+﻿using ModelLayer;
 using System.Collections.Generic;
 
 namespace StrategyAnalyzer.DAL
 {
    public interface IDataProvider
    {
-      IEnumerable<StrategyResultDto> GetStrategyInfo(string strategyName, string currency, string hour);
+      IEnumerable<StrategyResultsDto> GetStrategyInfo(string strategyName, string currency, string hour);
    }
 }

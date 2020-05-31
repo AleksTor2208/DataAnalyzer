@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using MarketDataLoader.ExtensionMethods;
 using MarketDataLoader.Model;
 using ModelLayer;
@@ -20,6 +17,11 @@ namespace MarketDataLoader.Converters
 
       private const string InitialDepositId = "Initial deposit";
       private const string FinishDepositId = "Finish deposit";
+      private const string CurrencyId = "defaultInstrument";
+      private const string PeriodId = "defaultPeriod";
+
+      private List<int> _orderDatesAsNumbers;
+      private List<double> _finResPerTrade;
 
       public StrategyResultsDtoConverter(Dictionary<string, string> basicInfo, Dictionary<string, string> paramsInfo, 
                                          Dictionary<string, string> detailsInfo, DateTime backtestStartDate, DateTime backtestEndDate)
@@ -29,47 +31,135 @@ namespace MarketDataLoader.Converters
          _detailsInfo = detailsInfo;
          _backtestStartDate = backtestStartDate;
          _backtestEndDate = backtestEndDate;
+         _orderDatesAsNumbers = new List<int>();
+         _finResPerTrade = new List<double>();
       }
 
-      internal StrategyResultsDto Convert(List<HistoricalOrderDto> historicalOrders, List<OrderLog> orderLogs)
+      internal StrategyResultsDto Convert(List<HistoricalOrderDto> historicalOrders, List<OrderLog> orderLogs, Dictionary<string, string> paramsInfo, long linkNumber)
       {
          var annualGrowth = CalculateAnnualGrowth(historicalOrders);
          var maximumDrowDown = CalculateMaximumDrowdown(historicalOrders, orderLogs);
          var recovery = annualGrowth / maximumDrowDown;
+         var rSquared = CalculateRSquared();
 
-
-         var resultsDto = new StrategyResultsDto();
+         var resultsDto = new StrategyResultsDto
+         {
+            LinkNumber = linkNumber,
+            OrdersQuantityByMonthes = GetAvarageOrdersQuantityInMonth(historicalOrders.Count()),
+            AnualGrowth = annualGrowth,
+            MaxDrawDown = maximumDrowDown,
+            Recovery = annualGrowth / maximumDrowDown,
+            RSquared = rSquared,
+            AvarageOrderInPips = CalculateAvarageFinResInPips(historicalOrders),
+            StrategyName = historicalOrders.First().Comment,
+            Currency = paramsInfo[CurrencyId],
+            Period = paramsInfo[PeriodId],//ConvertTimeframe(),
+            Parameters = paramsInfo
+         };
          return resultsDto;
+      }
+
+      private Timeframe ConvertTimeframe(string convertable)
+      {
+         if (convertable == "4 Hours")
+         {
+            return Timeframe.FourHours;
+         }
+         return Timeframe.Daily;
+      }
+
+      private double GetAvarageOrdersQuantityInMonth(double ordersQuantity)
+      {
+         var backTestMonthes = (_backtestEndDate.Month - _backtestStartDate.Month) 
+            + 12 * (_backtestEndDate.Year - _backtestStartDate.Year);
+         var result = ordersQuantity / backTestMonthes;
+         return Math.Round(result, 2);
+      }
+
+      private double CalculateAvarageFinResInPips(List<HistoricalOrderDto> historicalOrders)
+      {
+         var finResultInPips = 0.0;
+         foreach (var order in historicalOrders)
+         {
+            finResultInPips += order.ProfitLossInPips;
+         }
+         var result = finResultInPips / historicalOrders.Count();
+         return Math.Round(result,2);
+      }
+
+      private double CalculateRSquared()
+      {
+         var XminusXAvarage = new List<double>();
+         var YminusYAvarage = new List<double>();
+         var XYRatio = new List<double>(); // sum of this should be taken as nominator
+
+         foreach (var dateItem in _orderDatesAsNumbers)
+         {
+            var calculatedItem = dateItem - _orderDatesAsNumbers.Average();//U8 - AVERAGE($U$8:$U$1926)
+            XminusXAvarage.Add(Math.Round(calculatedItem, 0));
+         }
+         foreach (var finResult in _finResPerTrade)
+         {
+            var calculatedItem = finResult - _finResPerTrade.Average();//U8 - AVERAGE($U$8:$U$1926)
+            YminusYAvarage.Add(Math.Round(calculatedItem, 0));
+         }
+
+         if (XminusXAvarage.Count() != YminusYAvarage.Count())
+         {
+            const string errorMessage = "Open order dates and financial results items doesn't match";
+            throw new ArgumentException(errorMessage);
+         }
+         for (int i = 0; i < XminusXAvarage.Count(); i++)
+         {
+            XYRatio.Add(XminusXAvarage[i] * YminusYAvarage[i]);
+         }
+         double XYRatioSum = XYRatio.Sum(); // which should be taken as nominator
+
+         double denominator = Math.Sqrt(XminusXAvarage.Select(x => Math.Pow(x, 2)).Sum() *
+                              YminusYAvarage.Select(x => Math.Pow(x, 2)).Sum());
+         double R = XYRatioSum / denominator;
+         double RSquared = Math.Pow(R, 2);
+         return Math.Round(RSquared, 2);
       }
 
       private double CalculateMaximumDrowdown(List<HistoricalOrderDto> historicalOrders, List<OrderLog> orderLogs)
       {
          double initialDeposit = _basicInfo[InitialDepositId].ToDouble();
-         double portfolioAmount = initialDeposit;
-
+         double finResult = initialDeposit;
          double highWaterMark = initialDeposit;
+         
+         //to calculate max drawdown
          var drawdowns = new List<double>();
+         
+         //to calculate r-squared
+         //_finResPerTrade.Add(finResult);
+         //var firstDay = orderLogs.OrderBy(log => log.OpenDate).First().OpenDate.AddDays(-1);
+         //_orderDatesAsNumbers.Add(int.Parse(firstDay.ToString("yyyyMMdd")));
+
          foreach (var orderLog in orderLogs.OrderBy(log => log.OpenDate))
          {
             //subtract comission
             if (orderLog.Comisions.Any())
             {
-               portfolioAmount = portfolioAmount - orderLog.Comisions.Sum();
+               finResult = finResult - orderLog.Comisions.Sum();
             }
 
             var historicalOrder = historicalOrders.FirstOrDefault(order => order.Label == orderLog.Label);
-            //DateTime.Compare(order.OpenDate.Date, orderLog.OpenDate.Date) == 0);
             if (historicalOrder != null) //means some order was executed at this day 
             {
-               portfolioAmount = portfolioAmount + historicalOrder.ProfitLoss;
+               finResult = finResult + historicalOrder.ProfitLoss;
             }
-            if (highWaterMark < portfolioAmount)
+            if (highWaterMark < finResult)
             {
-               highWaterMark = portfolioAmount;
+               highWaterMark = finResult;
             }
             
-            var drawdown = Math.Round((highWaterMark - portfolioAmount) / highWaterMark, 6);
+            var drawdown = Math.Round((highWaterMark - finResult) / highWaterMark, 6);
             drawdowns.Add(drawdown);
+
+            //preparing data for R-squared calculations 
+            _orderDatesAsNumbers.Add(int.Parse(orderLog.OpenDate.ToString("yyyyMMdd")));
+            _finResPerTrade.Add(finResult);
          }
          return Math.Round(drawdowns.Max() * 100, 2);
       }

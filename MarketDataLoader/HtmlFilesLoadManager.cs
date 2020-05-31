@@ -42,6 +42,8 @@ namespace MarketDataLoader
             _htmlReader.LoadFile(htmlFile);
             _htmlReader.SelectTablesFromFile(htmlFile);
 
+            long linkNumber = _dbConnection.GetLinkNumber().Result;
+
             DateTime backtestStartDate, backtestEndDate;
             backtestStartDate = backtestEndDate = new DateTime();
             _htmlReader.SelectStartEndDate(htmlFile, ref backtestStartDate, ref backtestEndDate);
@@ -53,11 +55,12 @@ namespace MarketDataLoader
             var orderLogs = _htmlReader.ReadOrderLogs();
 
             var historicalOrders = _htmlReader.ReadHistoricalOrders();
-            var historicalOrdersBson = BSonConverter.GenerateHistoricalOrdersAsBSon(historicalOrders, paramsInfo);
+
+            var historicalOrdersBson = BSonConverter.GenerateHistoricalOrdersAsBSon(historicalOrders, paramsInfo, linkNumber);
 
             var strategyResultsConverter = new StrategyResultsDtoConverter(basicInfo, paramsInfo, detailsInfo, 
                                                                                  backtestStartDate, backtestEndDate);
-            var resultsDto = strategyResultsConverter.Convert(historicalOrders, orderLogs);
+            var strategyResultsAsBSon = strategyResultsConverter.Convert(historicalOrders, orderLogs, paramsInfo, linkNumber).ToBsonDocument();
 
             var ordersInfo = BSonConverter.GenerateOrdersInfoDocument(basicInfo, paramsInfo, detailsInfo);
             try
@@ -65,6 +68,7 @@ namespace MarketDataLoader
                Log.InfoFormat("Start writing data from from {0} to mongo.", htmlFile);
                _dbConnection.LoadOrdersInfo(ordersInfo);
                _dbConnection.LoadOrders(historicalOrdersBson);
+               _dbConnection.LoadResults(strategyResultsAsBSon);
                Log.InfoFormat("Processing {0} file finished successfully.", htmlFile);
             }
             catch (Exception e)
@@ -73,8 +77,8 @@ namespace MarketDataLoader
                throw;
             }
          }
-      }    
-      
+      }      
+
       private static string ValidateAndSetPath(string[] args)
       {
          string providedPathName = args[0].Split('=')[0];

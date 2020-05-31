@@ -1,8 +1,7 @@
-﻿using StrategyAnalyzer.DAL;
-using StrategyAnalyzer.Model;
+﻿using ModelLayer;
+using StrategyAnalyzer.DAL;
 using System.Collections.Generic;
 using System.Web.Http;
-using MVCDemo.Controllers;
 
 namespace StrategyAnalyzer.Controllers
 {
@@ -26,9 +25,10 @@ namespace StrategyAnalyzer.Controllers
 
       [HttpGet]
       [Route("{strategyName}/results/{currency}/{timeframe}")]
-      public IEnumerable<StrategyResultDto> GetStrategyInfo(string strategyName, string currency, string timeframe)
+      public IHttpActionResult /*IEnumerable<StrategyResultsDto>*/ GetStrategyInfo(string strategyName, string currency, string timeframe)
       {
-         return _dbProvider.GetStrategyInfo(strategyName, currency, timeframe);
+         var result = _dbProvider.GetStrategyInfo(strategyName, currency, timeframe);
+         return Ok(new { results = result });
       }
    }
 }

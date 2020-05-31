@@ -1,11 +1,14 @@
-﻿using MongoDB.Driver;
-using StrategyAnalyzer.Model;
+﻿using ModelLayer;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
+using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ModelLayer;
 
 namespace StrategyAnalyzer.DAL
 {
@@ -14,6 +17,7 @@ namespace StrategyAnalyzer.DAL
       private readonly IMongoDatabase _db;
       private const string OrdersTableName = "Orders";
       private const string OrdersInfoTableName = "OrdersInfo";
+      private const string ResultsInfoTableName = "ResultsInfo";
 
       public MongoDbConnection()
       {
@@ -22,9 +26,18 @@ namespace StrategyAnalyzer.DAL
          _db = dbClient.GetDatabase("data");
       }
 
-      public IEnumerable<StrategyResultDto> GetStrategyInfo(string strategyName, string currency, string hour)
+      public IEnumerable<StrategyResultsDto> GetStrategyInfo(string strategyName, string currency, string hour)
       {
-         return new List<StrategyResultDto>();
+         var OrdersInfoDb = _db.GetCollection<BsonDocument>(ResultsInfoTableName);
+         //var filter = Builders<StrategyResultsDto>.Filter.Where(e => e.StrategyName == strategyName).ToBsonDocument();
+         //&& e.Currency.Replace("/", "") == currency && e.Period.ToString().Replace(" ", "") == hour).ToBsonDocument();
+
+         var filter = Builders<BsonDocument>.Filter.Eq("StrategyName", strategyName);
+
+         var results = OrdersInfoDb.Find(filter).ToList();
+         var resultAsList = results.Select(r => BsonSerializer.Deserialize<StrategyResultsDto>(r));
+
+         return resultAsList;
       }
    }
 }

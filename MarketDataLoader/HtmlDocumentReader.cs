@@ -45,7 +45,7 @@ namespace MarketDataLoader
       internal List<OrderLog> ReadOrderLogs()
       {
          return OrdersLogConverter.Convert(ReadFromHtmlTable(TableType.OrderLogs));        
-      }
+      }    
 
       internal Dictionary<string, string> ReadDetailsTables(TableType tableIndex)
       {
