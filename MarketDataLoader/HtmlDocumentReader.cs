@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using MarketDataLoader.Converters;
 using MarketDataLoader.ExtensionMethods;
 using ModelLayer;
+using MarketDataLoader.Model;
 
 namespace MarketDataLoader
 {
@@ -20,12 +21,12 @@ namespace MarketDataLoader
 
 
 
-      internal List<HistoricalOrdersDto> ReadHistoricalOrders()
+      internal List<HistoricalOrderDto> ReadHistoricalOrders()
       {
          var tableWithHistoricalOrders = GetTableWithHistoricOrders(_tables).InnerHtml;
          string cleanedTable = Regex.Replace(tableWithHistoricalOrders, @"\t|\n|\r", "");
          var splittedTable = SplitRows(cleanedTable); 
-         var historicalOrders = new List<HistoricalOrdersDto>();
+         var historicalOrders = new List<HistoricalOrderDto>();
          var historicalOrderConverter = new HistoricalOrdersConverter();
          foreach (var row in splittedTable)
          {
@@ -39,14 +40,17 @@ namespace MarketDataLoader
       internal void SelectTablesFromFile(string htmlFile)
       {
          _tables = _doc.DocumentNode.SelectNodes("//table");
+      }      
+
+      internal List<OrderLog> ReadOrderLogs()
+      {
+         return OrdersLogConverter.Convert(ReadFromHtmlTable(TableType.OrderLogs));        
       }
 
-      internal Dictionary<string, string> ReadFromHtmlTable(TableType tableIndex)
+      internal Dictionary<string, string> ReadDetailsTables(TableType tableIndex)
       {
          var resultDictionary = new Dictionary<string, string>();
-         var currentTable = Regex.Replace(_tables[(int)tableIndex].InnerHtml, @"\t|\n|\r", "");
-         var splittedTable = SplitRows(currentTable);
-         foreach (var row in splittedTable)
+         foreach (var row in ReadFromHtmlTable(tableIndex))
          {
             var splittedRow = row.Replace("<th>", "").Split("</th>");
             if (!resultDictionary.ContainsKey(splittedRow[0]))
@@ -68,6 +72,12 @@ namespace MarketDataLoader
       internal void LoadFile(string htmlFile)
       {
          _doc.LoadHtml(File.ReadAllText(htmlFile));
+      }
+
+      private string[] ReadFromHtmlTable(TableType tableIndex)
+      {
+         var currentTable = Regex.Replace(_tables[(int)tableIndex].InnerHtml, @"\t|\n|\r", "");
+         return SplitRows(currentTable);
       }
 
       private string[] SplitRows(string table)
@@ -103,8 +113,7 @@ namespace MarketDataLoader
       {
          string[] headers = { "Label", "Amount", "Direction", "Open price", "Close price",
                               "Profit/Loss", "Profit/Loss in pips", "Open date", "Close date", "Comment" };
-         const int OrdersTableIndex = 4;
-         var currentTable = tables[OrdersTableIndex];
+         var currentTable = tables[(int)TableType.OrdersTable];
          if (headers.All(item => currentTable.ChildNodes[1].InnerHtml.Contains(item)))
          {
             return currentTable;

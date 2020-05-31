@@ -8,12 +8,12 @@ namespace ModelLayer
 {
    public class HistoricalOrders
    {
-      public HistoricalOrders(IEnumerable<HistoricalOrdersDto> orders)
+      public HistoricalOrders(IEnumerable<HistoricalOrderDto> orders)
       {
          Orders = orders;
       }
 
-      public IEnumerable<HistoricalOrdersDto> Orders { get; private set; }
+      public IEnumerable<HistoricalOrderDto> Orders { get; private set; }
 
       public IDictionary<string, string> Parameters { get; set; }
    }

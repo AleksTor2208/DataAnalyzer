@@ -5,10 +5,10 @@ namespace MarketDataLoader.Converters
 {
    class HistoricalOrdersConverter
    {
-      internal HistoricalOrdersDto Convert(string row)
+      internal HistoricalOrderDto Convert(string row)
       {
          var rowAsArray = row.Replace("<td>", "").Split("</td>");
-         var order = new HistoricalOrdersDto
+         var order = new HistoricalOrderDto
          {
             Label = rowAsArray[0],
             Amount = rowAsArray[1],

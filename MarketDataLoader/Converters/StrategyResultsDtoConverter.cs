@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using MarketDataLoader.ExtensionMethods;
+using MarketDataLoader.Model;
 using ModelLayer;
 
 namespace MarketDataLoader.Converters
@@ -29,41 +31,50 @@ namespace MarketDataLoader.Converters
          _backtestEndDate = backtestEndDate;
       }
 
-      internal StrategyResultsDto Convert(List<HistoricalOrdersDto> historicalOrders)
+      internal StrategyResultsDto Convert(List<HistoricalOrderDto> historicalOrders, List<OrderLog> orderLogs)
       {
          var annualGrowth = CalculateAnnualGrowth(historicalOrders);
-         var maximumDrowDown = CalculateMaximumDrowdown(historicalOrders);
-         var recovery = -0.0211 / 0.1736;
+         var maximumDrowDown = CalculateMaximumDrowdown(historicalOrders, orderLogs);
+         var recovery = annualGrowth / maximumDrowDown;
+
 
          var resultsDto = new StrategyResultsDto();
          return resultsDto;
       }
 
-      private double CalculateMaximumDrowdown(List<HistoricalOrdersDto> historicalOrders)
+      private double CalculateMaximumDrowdown(List<HistoricalOrderDto> historicalOrders, List<OrderLog> orderLogs)
       {
-         //var dateRange = new DateRange()
+         double initialDeposit = _basicInfo[InitialDepositId].ToDouble();
+         double portfolioAmount = initialDeposit;
 
-         var initialDeposit = _basicInfo[InitialDepositId].ToDouble();
-         var portfolioAmount = initialDeposit;
-
-
-         var portfolioStateforAllOrders = new List<Tuple<DateTime, double>>();
-         foreach (var order in historicalOrders.OrderBy(order => order.OpenDate))
+         double highWaterMark = initialDeposit;
+         var drawdowns = new List<double>();
+         foreach (var orderLog in orderLogs.OrderBy(log => log.OpenDate))
          {
-            portfolioAmount = portfolioAmount + order.ProfitLoss;
-            portfolioStateforAllOrders.Add(new Tuple<DateTime, double>(order.OpenDate, Math.Round(portfolioAmount, 4)));
-         }
+            //subtract comission
+            if (orderLog.Comisions.Any())
+            {
+               portfolioAmount = portfolioAmount - orderLog.Comisions.Sum();
+            }
 
-         var minPoint = portfolioStateforAllOrders.OrderBy(order => order.Item2).First();
-         var maxPoint = portfolioStateforAllOrders.Where(order => order.Item1 < minPoint.Item1)
-                                                  .OrderByDescending(order => order.Item2).First();
-         //(350 - 750) / 750
-         var drawDown = (minPoint.Item2 - maxPoint.Item2) / maxPoint.Item2 * 100;
-         var rounded = Math.Round(drawDown, 4);
-         return 1.1;
+            var historicalOrder = historicalOrders.FirstOrDefault(order => order.Label == orderLog.Label);
+            //DateTime.Compare(order.OpenDate.Date, orderLog.OpenDate.Date) == 0);
+            if (historicalOrder != null) //means some order was executed at this day 
+            {
+               portfolioAmount = portfolioAmount + historicalOrder.ProfitLoss;
+            }
+            if (highWaterMark < portfolioAmount)
+            {
+               highWaterMark = portfolioAmount;
+            }
+            
+            var drawdown = Math.Round((highWaterMark - portfolioAmount) / highWaterMark, 6);
+            drawdowns.Add(drawdown);
+         }
+         return Math.Round(drawdowns.Max() * 100, 2);
       }
 
-      private double CalculateAnnualGrowth(List<HistoricalOrdersDto> historicalOrders)
+      private double CalculateAnnualGrowth(List<HistoricalOrderDto> historicalOrders)
       {
          var initialDeposit = _basicInfo[InitialDepositId].ToDouble();
          var finishDeposit = _basicInfo[FinishDepositId].ToDouble();

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ModelLayer
 {
-   public class HistoricalOrdersDto
+   public class HistoricalOrderDto
    {
       public string Label { get; set; }
 

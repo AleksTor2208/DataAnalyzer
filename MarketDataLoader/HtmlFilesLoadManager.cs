@@ -46,22 +46,20 @@ namespace MarketDataLoader
             backtestStartDate = backtestEndDate = new DateTime();
             _htmlReader.SelectStartEndDate(htmlFile, ref backtestStartDate, ref backtestEndDate);
 
-            var basicInfo = _htmlReader.ReadFromHtmlTable(TableType.BasicInfo);
-            var paramsInfo = _htmlReader.ReadFromHtmlTable(TableType.ParamsInfo);
-            var detailsInfo = _htmlReader.ReadFromHtmlTable(TableType.DetailsInfo);
+            var basicInfo = _htmlReader.ReadDetailsTables(TableType.BasicInfo);
+            var paramsInfo = _htmlReader.ReadDetailsTables(TableType.ParamsInfo);
+            var detailsInfo = _htmlReader.ReadDetailsTables(TableType.DetailsInfo);
+
+            var orderLogs = _htmlReader.ReadOrderLogs();
 
             var historicalOrders = _htmlReader.ReadHistoricalOrders();
             var historicalOrdersBson = BSonConverter.GenerateHistoricalOrdersAsBSon(historicalOrders, paramsInfo);
 
             var strategyResultsConverter = new StrategyResultsDtoConverter(basicInfo, paramsInfo, detailsInfo, 
                                                                                  backtestStartDate, backtestEndDate);
-            var resultsDto = strategyResultsConverter.Convert(historicalOrders);
-
-            
-
+            var resultsDto = strategyResultsConverter.Convert(historicalOrders, orderLogs);
 
             var ordersInfo = BSonConverter.GenerateOrdersInfoDocument(basicInfo, paramsInfo, detailsInfo);
-
             try
             {
                Log.InfoFormat("Start writing data from from {0} to mongo.", htmlFile);

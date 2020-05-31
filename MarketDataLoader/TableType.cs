@@ -10,6 +10,8 @@ namespace MarketDataLoader
    {
       BasicInfo = 0,
       ParamsInfo = 1,
-      DetailsInfo = 2
+      DetailsInfo = 2,
+      OrdersTable = 4,
+      OrderLogs = 5
    }
 }

@@ -7,7 +7,7 @@ namespace MarketDataLoader.Converters
 {
    class BSonConverter
    {
-      internal static BsonDocument GenerateHistoricalOrdersAsBSon(List<HistoricalOrdersDto> historicalOrders, Dictionary<string, string> parameters)
+      internal static BsonDocument GenerateHistoricalOrdersAsBSon(List<HistoricalOrderDto> historicalOrders, Dictionary<string, string> parameters)
       {
          var historicalOrdersList = new HistoricalOrders(historicalOrders);
          historicalOrdersList.Parameters = parameters;
