@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using MarketDataLoader.ExtensionMethods;
 using MarketDataLoader.Model;
 using ModelLayer;
@@ -39,21 +40,21 @@ namespace MarketDataLoader.Converters
       {
          var annualGrowth = CalculateAnnualGrowth(historicalOrders);
          var maximumDrowDown = CalculateMaximumDrowdown(historicalOrders, orderLogs);
-         var recovery = annualGrowth / maximumDrowDown;
+         var recovery = Math.Round(annualGrowth / maximumDrowDown, 2);
          var rSquared = CalculateRSquared();
 
          var resultsDto = new StrategyResultsDto
          {
-            LinkNumber = linkNumber,
-            OrdersQuantityByMonthes = GetAvarageOrdersQuantityInMonth(historicalOrders.Count()),
+            Id = linkNumber,
+            OrdersPerMonth = GetAvarageOrdersQuantityInMonth(historicalOrders.Count()),
             AnualGrowth = annualGrowth,
             MaxDrawDown = maximumDrowDown,
-            Recovery = annualGrowth / maximumDrowDown,
+            Recovery = recovery,
             RSquared = rSquared,
             AvarageOrderInPips = CalculateAvarageFinResInPips(historicalOrders),
             StrategyName = historicalOrders.First().Comment,
             Currency = paramsInfo[CurrencyId],
-            Period = paramsInfo[PeriodId],//ConvertTimeframe(),
+            Timeframe = paramsInfo[PeriodId],//ConvertTimeframe(),
             Parameters = paramsInfo
          };
          return resultsDto;

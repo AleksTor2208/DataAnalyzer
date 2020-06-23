@@ -28,16 +28,32 @@ namespace StrategyAnalyzer.DAL
 
       public IEnumerable<StrategyResultsDto> GetStrategyInfo(string strategyName, string currency, string hour)
       {
-         var OrdersInfoDb = _db.GetCollection<BsonDocument>(ResultsInfoTableName);
+         var ResultsInfo = _db.GetCollection<BsonDocument>(ResultsInfoTableName);
          //var filter = Builders<StrategyResultsDto>.Filter.Where(e => e.StrategyName == strategyName).ToBsonDocument();
          //&& e.Currency.Replace("/", "") == currency && e.Period.ToString().Replace(" ", "") == hour).ToBsonDocument();
 
          var filter = Builders<BsonDocument>.Filter.Eq("StrategyName", strategyName);
-
-         var results = OrdersInfoDb.Find(filter).ToList();
+         var results = ResultsInfo.Find(filter).ToList();
          var resultAsList = results.Select(r => BsonSerializer.Deserialize<StrategyResultsDto>(r));
+         return resultAsList.Where(r => r.Currency.Replace("/", "").Equals(currency, StringComparison.InvariantCultureIgnoreCase)
+                              && r.Timeframe.Replace(" ", "").Equals(hour, StringComparison.InvariantCultureIgnoreCase));
+      }
 
-         return resultAsList;
+      public IEnumerable<HistoricalOrders> GetOrdersInfo(string strategyName, string currency, string hour, long id)
+      {
+         var ordersTable = _db.GetCollection<BsonDocument>(OrdersTableName);
+         List<BsonDocument> results;
+         if (id == long.MinValue)
+         {
+            results = ordersTable.Find(_ => true).ToList();
+         }
+         else
+         {
+            var filter = Builders<BsonDocument>.Filter.Eq("LinkNumber", id);
+            results = ordersTable.Find(filter).ToList();
+         }         
+         var ordersAsList = results.Select(r => BsonSerializer.Deserialize<HistoricalOrders>(r));
+         return ordersAsList;
       }
    }
 }

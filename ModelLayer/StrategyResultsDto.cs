@@ -10,8 +10,8 @@ namespace ModelLayer
    [BsonIgnoreExtraElements]
    public class StrategyResultsDto
    {
-      public long LinkNumber { get; set; }
-      public double OrdersQuantityByMonthes { get; set; }
+      public long Id { get; set; }
+      public double OrdersPerMonth { get; set; }
       public double AnualGrowth { get; set; }
       public double MaxDrawDown { get; set; }
       public double Recovery { get; set; }
@@ -19,7 +19,7 @@ namespace ModelLayer
       public double AvarageOrderInPips { get; set; }      
       public string StrategyName { get; set; }
       public string Currency { get; set; }
-      public string Period { get; set; }
+      public string Timeframe { get; set; }
       public IDictionary<string, string> Parameters { get; set; }
    }
 }

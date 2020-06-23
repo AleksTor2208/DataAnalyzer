@@ -48,14 +48,17 @@ namespace MarketDataLoader
          //OrdersDb.DeleteMany();
       }
            
-      internal async Task<long> GetLinkNumber()
+      internal async Task<long> GetLinkNumber(string strategyName)
       {
          var resultInfoTable = _db.GetCollection<BsonDocument>(ResultsInfoTableName);
-         var resultInfoData = await resultInfoTable.Find(_ => true).ToListAsync();
+
+         var filterForResults = Builders<BsonDocument>.Filter.Eq("StrategyName", strategyName);
+         var resultInfoData = await resultInfoTable.Find(filterForResults).ToListAsync();
          var resultAsList = resultInfoData.Select(r => BsonSerializer.Deserialize<StrategyResultsDto>(r));
 
          var OrdersDb = _db.GetCollection<BsonDocument>(OrdersTableName);
-         var ordersData = await OrdersDb.Find(_ => true).ToListAsync();
+         var filterForOrders = Builders<BsonDocument>.Filter.Eq("Comment", strategyName);
+         var ordersData = await OrdersDb.Find(filterForOrders).ToListAsync();
          var ordersAsList = ordersData.Select(r => BsonSerializer.Deserialize<HistoricalOrders>(r));
 
          long currentLinkNumber;
@@ -63,7 +66,7 @@ namespace MarketDataLoader
          List<long> ordersLinkNumbers;
          if (resultAsList.Any())
          {
-            resultsLinkNumbers = resultAsList.Select(r => r.LinkNumber).OrderByDescending(r => r).ToList();
+            resultsLinkNumbers = resultAsList.Select(r => r.Id).OrderByDescending(r => r).ToList();
             currentLinkNumber = resultsLinkNumbers.First() + 1;
          }
          else
@@ -87,10 +90,9 @@ namespace MarketDataLoader
          return currentLinkNumber;
       }
 
-      internal async void LoadResults(BsonDocument resultsAsBSon)
+      internal void LoadDataToResultsTable(BsonDocument resultsAsBSon)
       {
-         var OrdersInfoDb = _db.GetCollection<BsonDocument>(ResultsInfoTableName);       
-
+         var OrdersInfoDb = _db.GetCollection<BsonDocument>(ResultsInfoTableName);   
          OrdersInfoDb.InsertOne(resultsAsBSon);
       }
    }

@@ -19,8 +19,6 @@ namespace MarketDataLoader
       private HtmlDocument _doc = new HtmlDocument();
       private HtmlNodeCollection _tables;
 
-
-
       internal List<HistoricalOrderDto> ReadHistoricalOrders()
       {
          var tableWithHistoricalOrders = GetTableWithHistoricOrders(_tables).InnerHtml;

@@ -2,15 +2,10 @@
 using log4net.Appender;
 using log4net.Repository;
 using MarketDataLoader.Converters;
-using MarketDataLoader.ExtensionMethods;
-using MathNet.Numerics.Statistics;
-using Microsoft.Health;
 using MongoDB.Bson;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using ModelLayer;
 
 namespace MarketDataLoader
 {
@@ -42,8 +37,6 @@ namespace MarketDataLoader
             _htmlReader.LoadFile(htmlFile);
             _htmlReader.SelectTablesFromFile(htmlFile);
 
-            long linkNumber = _dbConnection.GetLinkNumber().Result;
-
             DateTime backtestStartDate, backtestEndDate;
             backtestStartDate = backtestEndDate = new DateTime();
             _htmlReader.SelectStartEndDate(htmlFile, ref backtestStartDate, ref backtestEndDate);
@@ -56,6 +49,10 @@ namespace MarketDataLoader
 
             var historicalOrders = _htmlReader.ReadHistoricalOrders();
 
+            var strategyName = historicalOrders.First().Comment;
+
+            long linkNumber = _dbConnection.GetLinkNumber(strategyName).Result;
+
             var historicalOrdersBson = BSonConverter.GenerateHistoricalOrdersAsBSon(historicalOrders, paramsInfo, linkNumber);
 
             var strategyResultsConverter = new StrategyResultsDtoConverter(basicInfo, paramsInfo, detailsInfo, 
@@ -65,10 +62,10 @@ namespace MarketDataLoader
             var ordersInfo = BSonConverter.GenerateOrdersInfoDocument(basicInfo, paramsInfo, detailsInfo);
             try
             {
-               Log.InfoFormat("Start writing data from from {0} to mongo.", htmlFile);
+               Log.InfoFormat("Start writing data from {0} to mongo.", htmlFile);
                _dbConnection.LoadOrdersInfo(ordersInfo);
                _dbConnection.LoadOrders(historicalOrdersBson);
-               _dbConnection.LoadResults(strategyResultsAsBSon);
+               _dbConnection.LoadDataToResultsTable(strategyResultsAsBSon);
                Log.InfoFormat("Processing {0} file finished successfully.", htmlFile);
             }
             catch (Exception e)
