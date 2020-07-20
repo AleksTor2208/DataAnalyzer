@@ -2,8 +2,12 @@
 using log4net.Appender;
 using log4net.Repository;
 using MarketDataLoader.Converters;
+using MarketDataLoader.ExtensionMethods;
+using MarketDataLoader.Model;
+using ModelLayer;
 using MongoDB.Bson;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -35,29 +39,32 @@ namespace MarketDataLoader
          {
             Log.InfoFormat("Start reading from html file. Input path is: {0}", htmlFile);
             _htmlReader.LoadFile(htmlFile);
-            _htmlReader.SelectTablesFromFile(htmlFile);
+            _htmlReader.SelectTablesFromFile(htmlFile);       
+            var orderLogs = _htmlReader.ReadOrderLogs();
 
-            DateTime backtestStartDate, backtestEndDate;
-            backtestStartDate = backtestEndDate = new DateTime();
-            _htmlReader.SelectStartEndDate(htmlFile, ref backtestStartDate, ref backtestEndDate);
+            var historicalOrders = _htmlReader.ReadHistoricalOrders();
+
+            var currency = _htmlReader.GetCurrency();
+            var strategyName = _htmlReader.GetStrategyName();//historicalOrders.First().Comment;
+
+            long linkNumber = _dbConnection.GetLinkNumber(strategyName).Result;
 
             var basicInfo = _htmlReader.ReadDetailsTables(TableType.BasicInfo);
             var paramsInfo = _htmlReader.ReadDetailsTables(TableType.ParamsInfo);
             var detailsInfo = _htmlReader.ReadDetailsTables(TableType.DetailsInfo);
 
-            var orderLogs = _htmlReader.ReadOrderLogs();
 
-            var historicalOrders = _htmlReader.ReadHistoricalOrders();
+            SetupInfo setupInfo = PrepareSetupInfo(htmlFile, basicInfo, paramsInfo, detailsInfo, strategyName, currency);
 
-            var strategyName = historicalOrders.First().Comment;
+            var calendarLogs = SetupCalendarLogs(setupInfo.StartDate, setupInfo.EndDate, historicalOrders, orderLogs);
+            EnrichHistoricalOrdersWithCommissions(historicalOrders);
 
-            long linkNumber = _dbConnection.GetLinkNumber(strategyName).Result;
+            // should be modified, commissions should be already calculated in Enrichment step
+            var strategyResultsConverter = new StrategyResultsDtoConverter(basicInfo, paramsInfo, detailsInfo, setupInfo, calendarLogs);
+            var strategyResultsAsBSon = strategyResultsConverter.Convert(historicalOrders, orderLogs, paramsInfo, linkNumber).ToBsonDocument();
+
 
             var historicalOrdersBson = BSonConverter.GenerateHistoricalOrdersAsBSon(historicalOrders, paramsInfo, linkNumber);
-
-            var strategyResultsConverter = new StrategyResultsDtoConverter(basicInfo, paramsInfo, detailsInfo, 
-                                                                                 backtestStartDate, backtestEndDate);
-            var strategyResultsAsBSon = strategyResultsConverter.Convert(historicalOrders, orderLogs, paramsInfo, linkNumber).ToBsonDocument();
 
             var ordersInfo = BSonConverter.GenerateOrdersInfoDocument(basicInfo, paramsInfo, detailsInfo);
             try
@@ -74,7 +81,106 @@ namespace MarketDataLoader
                throw;
             }
          }
-      }      
+      }
+
+      private void EnrichHistoricalOrdersWithCommissions(List<HistoricalOrderDto> historicalOrders)
+      {
+         //var aaa = SetupCalendarLogs()
+      }
+
+      private SetupInfo PrepareSetupInfo(string htmlFile, Dictionary<string, string> basicInfo, Dictionary<string, string> paramsInfo, 
+                                         Dictionary<string, string> detailsInfo, string strategyName, string currency)
+      {
+         var setupInfo = new SetupInfo()
+         {
+            AccountCurrency = currency,
+            StrategyName = strategyName,
+            InitialDeposit = basicInfo["Initial deposit"].ToDouble(),
+            Commission = detailsInfo["Commission"].ToDouble(),
+            ClosedPositions = detailsInfo["Closed positions"].ToInteger()
+         };
+         _htmlReader.SelectStartEndDate(htmlFile, setupInfo);
+         return setupInfo;
+      }
+
+      private List<CalendarLog> SetupCalendarLogs(DateTime startDate, DateTime endDate, List<HistoricalOrderDto> historicalOrders, IEnumerable<OrderLog> orderLogs)
+      {
+         const int LastOperationDayHour = 21;
+         var calendarLogs = new List<CalendarLog>();
+         DateTime currentdate = startDate.AddDays(-1);
+         while (DateTime.Compare(currentdate, endDate) <= 0)
+         {
+            //if (currentdate.DayOfWeek == DayOfWeek.Saturday || currentdate.DayOfWeek == DayOfWeek.Sunday)
+            //{
+            //   currentdate = currentdate.AddDays(1);
+            //   continue;
+            //}
+
+            var calendarLog = new CalendarLog()
+            {
+               OperationDay = currentdate
+            };
+
+            var logWithCommission = orderLogs.FirstOrDefault(log => DateTime.Compare(log.OperationDay.Date, currentdate.Date) == 0);
+            if (logWithCommission != null)
+            {
+               calendarLog.SumCmsn = logWithCommission.Comisions.Sum();
+            }
+
+            calendarLogs.Add(calendarLog);
+            currentdate = currentdate.AddDays(1);
+         }
+
+         for (int i = 0; i < calendarLogs.Count(); i++)
+         {
+            var currentOrder = historicalOrders.FirstOrDefault(order => DateTime.Compare(
+                                                               order.OpenDate.Date, calendarLogs[i].OperationDay.Date) == 0);
+            if (currentOrder != null)
+            {
+               //TradesOpened set
+               //if Open trade hour is earlier then 21 gmt then order assignes to current day
+               if (currentOrder.OpenDate.Hour <= LastOperationDayHour)
+               {
+                  calendarLogs[i].TradesOpened.Add(currentOrder.Label);
+               }
+               if (currentOrder.OpenDate.Hour > LastOperationDayHour)
+               {
+                  calendarLogs[i + 1].TradesOpened.Add(currentOrder.Label);
+               }
+            }
+         }
+
+         for (int i = 0; i < calendarLogs.Count(); i++)
+         {
+            var currentOrder = historicalOrders.FirstOrDefault(order => DateTime.Compare(
+                                                               order.CloseDate.Date, calendarLogs[i].OperationDay.Date) == 0);
+            if (currentOrder != null)
+            {
+               //TradesClosed set
+               if (currentOrder.CloseDate.Hour <= LastOperationDayHour)
+               {
+                  calendarLogs[i].TradesClosed.Add(currentOrder.Label);
+               }
+               if (currentOrder.CloseDate.Hour > LastOperationDayHour)
+               {
+                  calendarLogs[i + 1].TradesClosed.Add(currentOrder.Label);
+               }
+            }
+         }
+         //AvgCmsn = сумма_комиссий / (сделок_открыто + сделок_закрыто)
+         for (int i = 0; i < calendarLogs.Count(); i++)
+         {
+            var currentLog = calendarLogs[i];
+            int tradesTotal = currentLog.TradesOpened.Count() + currentLog.TradesClosed.Count();
+            if (currentLog.SumCmsn != 0 && tradesTotal != 0)
+            {
+               calendarLogs[i].AvgCmsn = currentLog.SumCmsn / tradesTotal;
+            }
+         }
+         return calendarLogs;
+      }
+
+
 
       private static string ValidateAndSetPath(string[] args)
       {

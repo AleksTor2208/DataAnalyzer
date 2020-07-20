@@ -40,7 +40,7 @@ namespace MarketDataLoader
          _tables = _doc.DocumentNode.SelectNodes("//table");
       }      
 
-      internal List<OrderLog> ReadOrderLogs()
+      internal IEnumerable<OrderLog> ReadOrderLogs()
       {
          return OrdersLogConverter.Convert(ReadFromHtmlTable(TableType.OrderLogs));        
       }    
@@ -59,12 +59,26 @@ namespace MarketDataLoader
          return resultDictionary;
       }
 
-      internal void SelectStartEndDate(string htmlFile, ref DateTime backtestStartDate, ref DateTime backtestEndtDate)
+      internal string GetStrategyName()
+      {
+         var header = _doc.DocumentNode.SelectNodes("//h1").First().InnerHtml;
+         return header.Split(" ").First();
+      }
+
+      internal string GetCurrency()
+      {
+         var headers = _doc.DocumentNode.SelectNodes("//h2");
+         const int InstrumentTableIndex = 1;
+         var result = headers[InstrumentTableIndex].InnerHtml.Replace("Instrument", "");
+         return result.Trim();
+      }
+
+      internal void SelectStartEndDate(string htmlFile, SetupInfo setupInfo)
       {
          var headerContent = _doc.DocumentNode.SelectNodes("//h1").First().InnerHtml.Split("from");
          var datesAsArray = headerContent[1].Split("to");
-         backtestStartDate = datesAsArray[0].ToDateTime();
-         backtestEndtDate = datesAsArray[1].ToDateTime();
+         setupInfo.StartDate = datesAsArray[0].ToDateTime();
+         setupInfo.EndDate = datesAsArray[1].ToDateTime();
       }
 
       internal void LoadFile(string htmlFile)

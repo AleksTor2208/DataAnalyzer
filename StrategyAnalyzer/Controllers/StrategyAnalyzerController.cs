@@ -66,7 +66,6 @@ namespace StrategyAnalyzer.Controllers
             //- podschityvat' statistiki dlia kashdogo slajsa, 
             //- znachit k etomu momentu neobhodimyje dannyje dolzhny byt' v baze
          }
-
          return Ok(new { periodSlices });
       }
 

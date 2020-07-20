@@ -13,8 +13,8 @@ namespace MarketDataLoader.Converters
       private readonly Dictionary<string, string> _basicInfo;
       private readonly Dictionary<string, string> _paramsInfo;
       private readonly Dictionary<string, string> _detailsInfo;
-      private readonly DateTime _backtestStartDate;
-      private readonly DateTime _backtestEndDate;
+      private readonly List<CalendarLog> _calendarLogs;
+      private readonly SetupInfo _setupInfo;
 
       private const string InitialDepositId = "Initial deposit";
       private const string FinishDepositId = "Finish deposit";
@@ -25,21 +25,27 @@ namespace MarketDataLoader.Converters
       private List<double> _finResPerTrade;
 
       public StrategyResultsDtoConverter(Dictionary<string, string> basicInfo, Dictionary<string, string> paramsInfo, 
-                                         Dictionary<string, string> detailsInfo, DateTime backtestStartDate, DateTime backtestEndDate)
+                                         Dictionary<string, string> detailsInfo, SetupInfo setupInfo, List<CalendarLog> calendarLogs)
       {
          _basicInfo = basicInfo;
          _paramsInfo = paramsInfo;
          _detailsInfo = detailsInfo;
-         _backtestStartDate = backtestStartDate;
-         _backtestEndDate = backtestEndDate;
+         _setupInfo = setupInfo;
+         _calendarLogs = calendarLogs;
          _orderDatesAsNumbers = new List<int>();
          _finResPerTrade = new List<double>();
       }
 
-      internal StrategyResultsDto Convert(List<HistoricalOrderDto> historicalOrders, List<OrderLog> orderLogs, Dictionary<string, string> paramsInfo, long linkNumber)
+      internal StrategyResultsDto Convert(List<HistoricalOrderDto> historicalOrders, IEnumerable<OrderLog> orderLogs, Dictionary<string, string> paramsInfo, long linkNumber)
       {
+         //количество лет в историческом окне (дата_конец - дата_начало + 1) 
+         int yearsInHistoryWindow = (_setupInfo.EndDate - _setupInfo.StartDate.AddDays(1)).Days / 365;
+         //позиций_закрыто / (лет_в_историческом_окне * 12)
+
+         double tradesPerMonth = _setupInfo.ClosedPositions / (yearsInHistoryWindow * 12);
+
          var annualGrowth = CalculateAnnualGrowth(historicalOrders);
-         var maximumDrowDown = CalculateMaximumDrowdown(historicalOrders, orderLogs);
+         var maximumDrowDown = CalculateMaximumDrowdown(historicalOrders, orderLogs, _calendarLogs);
          var recovery = Math.Round(annualGrowth / maximumDrowDown, 2);
          var rSquared = CalculateRSquared();
 
@@ -58,7 +64,7 @@ namespace MarketDataLoader.Converters
             Parameters = paramsInfo
          };
          return resultsDto;
-      }
+      }      
 
       private Timeframe ConvertTimeframe(string convertable)
       {
@@ -71,8 +77,8 @@ namespace MarketDataLoader.Converters
 
       private double GetAvarageOrdersQuantityInMonth(double ordersQuantity)
       {
-         var backTestMonthes = (_backtestEndDate.Month - _backtestStartDate.Month) 
-            + 12 * (_backtestEndDate.Year - _backtestStartDate.Year);
+         var backTestMonthes = (_setupInfo.EndDate.Month - _setupInfo.StartDate.Month) 
+            + 12 * (_setupInfo.EndDate.Year - _setupInfo.StartDate.Year);
          var result = ordersQuantity / backTestMonthes;
          return Math.Round(result, 2);
       }
@@ -123,21 +129,33 @@ namespace MarketDataLoader.Converters
          return Math.Round(RSquared, 2);
       }
 
-      private double CalculateMaximumDrowdown(List<HistoricalOrderDto> historicalOrders, List<OrderLog> orderLogs)
+      private double CalculateMaximumDrowdown(IEnumerable<HistoricalOrderDto> historicalOrders, 
+                                              IEnumerable<OrderLog> orderLogs, IEnumerable<CalendarLog> calendarLogs)
       {
+         //initial deposit to be moved
          double initialDeposit = _basicInfo[InitialDepositId].ToDouble();
          double finResult = initialDeposit;
          double highWaterMark = initialDeposit;
          
          //to calculate max drawdown
          var drawdowns = new List<double>();
-         
+
          //to calculate r-squared
          //_finResPerTrade.Add(finResult);
          //var firstDay = orderLogs.OrderBy(log => log.OpenDate).First().OpenDate.AddDays(-1);
          //_orderDatesAsNumbers.Add(int.Parse(firstDay.ToString("yyyyMMdd")));
 
-         foreach (var orderLog in orderLogs.OrderBy(log => log.OpenDate))
+         foreach (var calendarLog in calendarLogs)
+         {
+            var historicalOrdersByCurrentDate = historicalOrders.Where(order => calendarLog.TradesClosed.Contains(order.Label));
+            if (historicalOrdersByCurrentDate.Any()) //means some order was executed at this day 
+            {
+
+            }
+
+         }
+
+         foreach (var orderLog in orderLogs.OrderBy(log => log.OperationDay))
          {
             //subtract comission
             if (orderLog.Comisions.Any())
@@ -146,6 +164,7 @@ namespace MarketDataLoader.Converters
             }
 
             var historicalOrder = historicalOrders.FirstOrDefault(order => order.Label == orderLog.Label);
+
             if (historicalOrder != null) //means some order was executed at this day 
             {
                finResult = finResult + historicalOrder.ProfitLoss;
@@ -159,7 +178,7 @@ namespace MarketDataLoader.Converters
             drawdowns.Add(drawdown);
 
             //preparing data for R-squared calculations 
-            _orderDatesAsNumbers.Add(int.Parse(orderLog.OpenDate.ToString("yyyyMMdd")));
+            _orderDatesAsNumbers.Add(int.Parse(orderLog.OperationDay.ToString("yyyyMMdd")));
             _finResPerTrade.Add(finResult);
          }
          return Math.Round(drawdowns.Max() * 100, 2);
@@ -171,7 +190,7 @@ namespace MarketDataLoader.Converters
          var finishDeposit = _basicInfo[FinishDepositId].ToDouble();
          var depositRemainder = Math.Round((finishDeposit - initialDeposit) * 100 / initialDeposit / 100, 4);
 
-         var backTestDays = (_backtestEndDate - _backtestStartDate).Days;
+         var backTestDays = (_setupInfo.EndDate - _setupInfo.StartDate).Days;
 
          double powered = (double)365 / (double)backTestDays;
 

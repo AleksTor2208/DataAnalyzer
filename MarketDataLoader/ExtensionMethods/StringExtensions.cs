@@ -19,6 +19,16 @@ namespace MarketDataLoader.ExtensionMethods
          return dateTime;
       }
 
+      public static int ToInteger(this string stringToParse)
+      {
+         int value;
+         if (!int.TryParse(stringToParse, out value))
+         {
+            throw new ArgumentException($"Unable to parse {stringToParse} to Integer");
+         }
+         return value;
+      }
+
       public static double ToDouble(this string stringToParse)
       {
          var cultureSeparator = Thread.CurrentThread.CurrentCulture.NumberFormat.NumberDecimalSeparator;

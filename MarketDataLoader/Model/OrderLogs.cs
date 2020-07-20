@@ -11,7 +11,7 @@ namespace MarketDataLoader.Model
       }
       public string Label { get; set; }
 
-      public DateTime OpenDate { get; set; }
+      public DateTime OperationDay { get; set; }
 
       public List<double> Comisions { get; set; }
    }

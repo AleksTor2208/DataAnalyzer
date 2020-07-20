@@ -12,7 +12,31 @@ namespace MarketDataLoader.Converters
 {
    class OrdersLogConverter
    {
-      internal static List<OrderLog> Convert(string[] htmlLogs)
+      internal static IEnumerable<OrderLog> Convert(string[] htmlLogs)
+      {
+         var orderLogs = new List<OrderLog>();
+
+         for (int i = 1; i < htmlLogs.Length; i++)
+         {
+            var orderLog = new OrderLog();
+            var logsArray = htmlLogs[i].Replace("<td>", "").Split("</td>");
+
+            if (logsArray[1] == "Commissions")
+            {
+               double comission = GetComission(logsArray);
+               if (comission != 0)
+               {
+                  orderLog.Comisions.Add(comission);
+                  orderLog.OperationDay = logsArray[0].ToDateTime();
+                  orderLogs.Add(orderLog);
+               }
+            }
+         }
+         return orderLogs.GroupBy(log => log.OperationDay).SelectMany(log => log).ToList();
+      }
+
+
+      internal static List<OrderLog> Convert_bkp(string[] htmlLogs)
       {
          var orderLogs = new List<OrderLog>();
 
@@ -30,7 +54,7 @@ namespace MarketDataLoader.Converters
             if (logsArray[1] == "Order filled")
             {
                isNewOrder = false;
-               orderLog.OpenDate = logsArray[0].ToDateTime();
+               orderLog.OperationDay = logsArray[0].ToDateTime();
                //Order[IVF20150128_03595926306857, USD / JPY, BUY, 20414.0 at 118.144] filled
                var currentLog = logsArray[2].Replace(" ", string.Empty);
                Regex pattern = new Regex(@".+\[(.+)\,.+\].+");
@@ -71,15 +95,15 @@ namespace MarketDataLoader.Converters
          {
             if (log.Comisions.Count == 0)
             {
-               strBuilder.Append($"{log.OpenDate},{log.Label},0\n");
+               strBuilder.Append($"{log.OperationDay},{log.Label},0\n");
             }
             if (log.Comisions.Count == 1)
             {
-               strBuilder.Append($"{log.OpenDate},{log.Label},{log.Comisions.First()}\n");
+               strBuilder.Append($"{log.OperationDay},{log.Label},{log.Comisions.First()}\n");
             }
             if (log.Comisions.Count == 2)
             {
-               strBuilder.Append($"{log.OpenDate},{log.Label},{log.Comisions.First()},{log.Comisions[1]}\n");
+               strBuilder.Append($"{log.OperationDay},{log.Label},{log.Comisions.First()},{log.Comisions[1]}\n");
             }
          }
          string path = @"C:\Users\ASUS\Documents\FX\sample_reports\ordersWithCommissions.csv";

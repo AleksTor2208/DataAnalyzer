@@ -193,6 +193,7 @@
   <ItemGroup>
     <Compile Include="Converters\BSonConverter.cs" />
     <Compile Include="Converters\HistoricalOrdersConverter.cs" />
+    <Compile Include="Model\CalendarLog.cs" />
     <Compile Include="Model\OrderLogs.cs" />
     <Compile Include="Converters\OrdersLogConverter.cs" />
     <Compile Include="Converters\StrategyResultsDtoConverter.cs" />
@@ -200,6 +201,7 @@
     <Compile Include="ExtensionMethods\StringExtensions.cs" />
     <Compile Include="HtmlDocumentReader.cs" />
     <Compile Include="HtmlFilesLoadManager.cs" />
+    <Compile Include="Model\SetupInfo.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TableType.cs" />
