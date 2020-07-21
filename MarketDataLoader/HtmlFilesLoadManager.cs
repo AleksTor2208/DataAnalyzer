@@ -56,8 +56,9 @@ namespace MarketDataLoader
 
             SetupInfo setupInfo = PrepareSetupInfo(htmlFile, basicInfo, paramsInfo, detailsInfo, strategyName, currency);
 
+            ShiftHistoricalOrdersDates(historicalOrders);
             var calendarLogs = SetupCalendarLogs(setupInfo.StartDate, setupInfo.EndDate, historicalOrders, orderLogs);
-            EnrichHistoricalOrdersWithCommissions(historicalOrders);
+            
 
             // should be modified, commissions should be already calculated in Enrichment step
             var strategyResultsConverter = new StrategyResultsDtoConverter(basicInfo, paramsInfo, detailsInfo, setupInfo, calendarLogs);
@@ -83,9 +84,22 @@ namespace MarketDataLoader
          }
       }
 
-      private void EnrichHistoricalOrdersWithCommissions(List<HistoricalOrderDto> historicalOrders)
+      private void ShiftHistoricalOrdersDates(List<HistoricalOrderDto> historicalOrders)
       {
-         //var aaa = SetupCalendarLogs()
+         const int LastOperationHour = 21;
+         foreach (var order in historicalOrders)
+         {
+            if (order.OpenDate.Hour > LastOperationHour)
+            {
+               var tempDate = order.OpenDate.AddDays(1);
+               order.OpenDate = new DateTime(tempDate.Year, tempDate.Month, tempDate.Day);
+            }
+            if (order.CloseDate.Hour > LastOperationHour)
+            {
+               var tempDate = order.CloseDate.AddDays(1);
+               order.CloseDate = new DateTime(tempDate.Year, tempDate.Month, tempDate.Day);
+            }
+         }
       }
 
       private SetupInfo PrepareSetupInfo(string htmlFile, Dictionary<string, string> basicInfo, Dictionary<string, string> paramsInfo, 
@@ -105,17 +119,12 @@ namespace MarketDataLoader
 
       private List<CalendarLog> SetupCalendarLogs(DateTime startDate, DateTime endDate, List<HistoricalOrderDto> historicalOrders, IEnumerable<OrderLog> orderLogs)
       {
-         const int LastOperationDayHour = 21;
          var calendarLogs = new List<CalendarLog>();
          DateTime currentdate = startDate.AddDays(-1);
+
+         //preparing calendarLogs skeleton 
          while (DateTime.Compare(currentdate, endDate) <= 0)
          {
-            //if (currentdate.DayOfWeek == DayOfWeek.Saturday || currentdate.DayOfWeek == DayOfWeek.Sunday)
-            //{
-            //   currentdate = currentdate.AddDays(1);
-            //   continue;
-            //}
-
             var calendarLog = new CalendarLog()
             {
                OperationDay = currentdate
@@ -131,56 +140,36 @@ namespace MarketDataLoader
             currentdate = currentdate.AddDays(1);
          }
 
-         for (int i = 0; i < calendarLogs.Count(); i++)
+         //TradesOpened\TradesClosed set
+         foreach (var calendarLog in calendarLogs)
          {
-            var currentOrder = historicalOrders.FirstOrDefault(order => DateTime.Compare(
-                                                               order.OpenDate.Date, calendarLogs[i].OperationDay.Date) == 0);
-            if (currentOrder != null)
+            var currentOpenedOrder = historicalOrders.FirstOrDefault(order => DateTime.Compare(
+                                                               order.OpenDate.Date, calendarLog.OperationDay.Date) == 0);
+            if (currentOpenedOrder != null)
             {
-               //TradesOpened set
-               //if Open trade hour is earlier then 21 gmt then order assignes to current day
-               if (currentOrder.OpenDate.Hour <= LastOperationDayHour)
-               {
-                  calendarLogs[i].TradesOpened.Add(currentOrder.Label);
-               }
-               if (currentOrder.OpenDate.Hour > LastOperationDayHour)
-               {
-                  calendarLogs[i + 1].TradesOpened.Add(currentOrder.Label);
-               }
+               calendarLog.TradesOpened.Add(currentOpenedOrder.Label);
+            }
+
+            var currentClosedOrder = historicalOrders.FirstOrDefault(order => DateTime.Compare(
+                                                               order.CloseDate.Date, calendarLog.OperationDay.Date) == 0);
+
+            if (currentClosedOrder != null)
+            {
+               calendarLog.TradesClosed.Add(currentClosedOrder.Label);
             }
          }
 
-         for (int i = 0; i < calendarLogs.Count(); i++)
-         {
-            var currentOrder = historicalOrders.FirstOrDefault(order => DateTime.Compare(
-                                                               order.CloseDate.Date, calendarLogs[i].OperationDay.Date) == 0);
-            if (currentOrder != null)
-            {
-               //TradesClosed set
-               if (currentOrder.CloseDate.Hour <= LastOperationDayHour)
-               {
-                  calendarLogs[i].TradesClosed.Add(currentOrder.Label);
-               }
-               if (currentOrder.CloseDate.Hour > LastOperationDayHour)
-               {
-                  calendarLogs[i + 1].TradesClosed.Add(currentOrder.Label);
-               }
-            }
-         }
          //AvgCmsn = сумма_комиссий / (сделок_открыто + сделок_закрыто)
-         for (int i = 0; i < calendarLogs.Count(); i++)
+         foreach (var calendarLog in calendarLogs)
          {
-            var currentLog = calendarLogs[i];
-            int tradesTotal = currentLog.TradesOpened.Count() + currentLog.TradesClosed.Count();
-            if (currentLog.SumCmsn != 0 && tradesTotal != 0)
+            int tradesTotal = calendarLog.TradesOpened.Count() + calendarLog.TradesClosed.Count();
+            if (calendarLog.SumCmsn != 0 && tradesTotal != 0)
             {
-               calendarLogs[i].AvgCmsn = currentLog.SumCmsn / tradesTotal;
+               calendarLog.AvgCmsn = calendarLog.SumCmsn / tradesTotal;
             }
          }
          return calendarLogs;
       }
-
-
 
       private static string ValidateAndSetPath(string[] args)
       {

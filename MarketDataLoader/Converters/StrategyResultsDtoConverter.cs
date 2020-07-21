@@ -152,9 +152,9 @@ namespace MarketDataLoader.Converters
             {
 
             }
-
          }
 
+         // old implemetation should be reused, but with calendarLogs instead of orderLogs
          foreach (var orderLog in orderLogs.OrderBy(log => log.OperationDay))
          {
             //subtract comission
