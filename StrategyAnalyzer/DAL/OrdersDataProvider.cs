@@ -16,9 +16,9 @@ namespace StrategyAnalyzer.DAL
          _connection = connection;
       }
 
-      public IEnumerable<HistoricalOrders> GetOrdersInfo(string strategyName, string currency, string hour, long id = long.MinValue)
+      public IEnumerable<HistoricalOrders> GetOrdersInfo(string strategyName, string currency, string hour)
       {
-         return _connection.GetOrdersInfo(strategyName, currency, hour, id);
+         return _connection.GetOrdersInfo(strategyName, currency, hour);
       }
 
       public IEnumerable<StrategyResultsDto> GetStrategyInfo(string strategyName, string currency, string hour)

@@ -26,7 +26,10 @@ namespace StrategyAnalyzer
 
       public void Dispose()
       {
-         throw new NotImplementedException();
+         if (_container != null)
+         {
+            _container.Dispose();
+         }
       }
 
       public object GetService(Type serviceType)

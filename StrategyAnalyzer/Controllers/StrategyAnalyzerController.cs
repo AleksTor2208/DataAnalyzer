@@ -1,4 +1,5 @@
-﻿using ModelLayer;
+﻿using log4net;
+using ModelLayer;
 using StrategyAnalyzer.DAL;
 using System;
 using System.Collections.Generic;
@@ -11,6 +12,8 @@ namespace StrategyAnalyzer.Controllers
    public class StrategyAnalyzerController : ApiController
    {
       private readonly IDataProvider _dbProvider;
+      private static readonly ILog Log =
+              LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
       public StrategyAnalyzerController(IDataProvider dbProvider)
       {
@@ -29,15 +32,18 @@ namespace StrategyAnalyzer.Controllers
       [Route("{strategyName}/results/{currency}/{timeframe}")]
       public IHttpActionResult /*IEnumerable<StrategyResultsDto>*/ GetStrategyResultsInfo(string strategyName, string currency, string timeframe)
       {
+         Log.Info("I'm inside GetStrategyResultsInfo()");
          var result = _dbProvider.GetStrategyInfo(strategyName, currency, timeframe);
          return Ok(new { result });
       }
 
       [HttpGet]
       [Route("{strategyName}/orders/{currency}/{timeframe}")]
-      public IHttpActionResult /*IEnumerable<StrategyResultsDto>*/ GetOrdersInfo(string strategyName, string currency, string timeframe, long id)
+      public IHttpActionResult /*IEnumerable<StrategyResultsDto>*/ GetOrdersInfo(string strategyName, string currency, string timeframe)
       {
-         var result = _dbProvider.GetOrdersInfo(strategyName, currency, timeframe, id);
+         Log.Info("I'm inside GetOrdersInfo()");
+         var result = _dbProvider.GetOrdersInfo(strategyName, currency, timeframe);
+         Log.InfoFormat("Orders data had been returns. Amount number: {0}", result.Count());
          return Ok(new { result });
       }
 

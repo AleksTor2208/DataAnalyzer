@@ -56,8 +56,8 @@ namespace MarketDataLoader
 
             SetupInfo setupInfo = PrepareSetupInfo(htmlFile, basicInfo, paramsInfo, detailsInfo, strategyName, currency);
 
-            ShiftHistoricalOrdersDates(historicalOrders);
-            var calendarLogs = SetupCalendarLogs(setupInfo.StartDate, setupInfo.EndDate, historicalOrders, orderLogs);
+            AdjustOrdersDates(historicalOrders);
+            var calendarLogs = SetupCalendarLogs(setupInfo.StartDate, setupInfo.EndDate, historicalOrders, orderLogs, setupInfo);
             
 
             // should be modified, commissions should be already calculated in Enrichment step
@@ -84,8 +84,10 @@ namespace MarketDataLoader
          }
       }
 
-      private void ShiftHistoricalOrdersDates(List<HistoricalOrderDto> historicalOrders)
+      private void AdjustOrdersDates(List<HistoricalOrderDto> historicalOrders)
       {
+         //if order.OpenDate.DayOfWeek
+         // OpenDate/ClosedDate nado ostavit'!!!
          const int LastOperationHour = 21;
          foreach (var order in historicalOrders)
          {
@@ -117,7 +119,8 @@ namespace MarketDataLoader
          return setupInfo;
       }
 
-      private List<CalendarLog> SetupCalendarLogs(DateTime startDate, DateTime endDate, List<HistoricalOrderDto> historicalOrders, IEnumerable<OrderLog> orderLogs)
+      private List<CalendarLog> SetupCalendarLogs(DateTime startDate, DateTime endDate, IEnumerable<HistoricalOrderDto> historicalOrders, 
+                                                                                        IEnumerable<OrderLog> orderLogs, SetupInfo setupInfo)
       {
          var calendarLogs = new List<CalendarLog>();
          DateTime currentdate = startDate.AddDays(-1);
@@ -143,17 +146,14 @@ namespace MarketDataLoader
          //TradesOpened\TradesClosed set
          foreach (var calendarLog in calendarLogs)
          {
-            var currentOpenedOrder = historicalOrders.FirstOrDefault(order => DateTime.Compare(
-                                                               order.OpenDate.Date, calendarLog.OperationDay.Date) == 0);
-            if (currentOpenedOrder != null)
+            foreach (var currentOpenedOrder in historicalOrders.Where(order => DateTime.Compare(
+                                                               order.OpenDate.Date, calendarLog.OperationDay.Date) == 0))
             {
                calendarLog.TradesOpened.Add(currentOpenedOrder.Label);
             }
 
-            var currentClosedOrder = historicalOrders.FirstOrDefault(order => DateTime.Compare(
-                                                               order.CloseDate.Date, calendarLog.OperationDay.Date) == 0);
-
-            if (currentClosedOrder != null)
+            foreach (var currentClosedOrder in historicalOrders.Where(order => DateTime.Compare(
+                                                                        order.CloseDate.Date, calendarLog.OperationDay.Date) == 0))
             {
                calendarLog.TradesClosed.Add(currentClosedOrder.Label);
             }
@@ -168,7 +168,34 @@ namespace MarketDataLoader
                calendarLog.AvgCmsn = calendarLog.SumCmsn / tradesTotal;
             }
          }
+         SetupEodResult(calendarLogs, startDate, setupInfo.InitialDeposit, historicalOrders);
          return calendarLogs;
+      }
+
+      private void SetupEodResult(List<CalendarLog> calendarLogs, DateTime startDate, double initialDeposit, IEnumerable<HistoricalOrderDto> historicalOrders)
+      {
+         double currentEodResult = initialDeposit;
+         foreach (var calendarLog in calendarLogs)
+         {
+            if (DateTime.Compare(calendarLog.OperationDay, startDate) < 0)
+            {
+               calendarLog.EodFinRes = currentEodResult;
+               continue;
+            }
+            //checking 
+            var pickedOrders = historicalOrders.Where(currentOrder => DateTime.Compare(currentOrder.CloseDate.Date, calendarLog.OperationDay.Date) == 0);
+            if (!pickedOrders.Any())
+            {
+               calendarLog.EodFinRes = currentEodResult;
+            }
+            double totalProfitLoss = 0;
+            foreach (var order in pickedOrders)
+            {
+               totalProfitLoss += order.ProfitLoss;
+            }
+            currentEodResult = currentEodResult + totalProfitLoss - calendarLog.SumCmsn;
+            calendarLog.EodFinRes = currentEodResult;
+         }
       }
 
       private static string ValidateAndSetPath(string[] args)

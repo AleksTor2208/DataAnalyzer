@@ -37,7 +37,6 @@ namespace StrategyAnalyzer
                {
                   StartService(baseUri, container);
                }
-               
             }
          }
          catch (Exception e)
@@ -45,7 +44,6 @@ namespace StrategyAnalyzer
             Log.ErrorFormat("Service stopped with error: {0}, stackTrace: {1}", e.Message,
                                                                                 e.StackTrace);
          }
-         
       }
 
       private static void StartService(string baseUri, WindsorContainer container)

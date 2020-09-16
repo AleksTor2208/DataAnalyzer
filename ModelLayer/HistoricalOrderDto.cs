@@ -27,5 +27,7 @@ namespace ModelLayer
       public DateTime CloseDate { get; set; }
 
       public string Comment { get; set; }
+
+      public List<double> Commissions { get; set; }
    }
 }

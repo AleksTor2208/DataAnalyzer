@@ -7,6 +7,6 @@ namespace StrategyAnalyzer.DAL
    {
       IEnumerable<StrategyResultsDto> GetStrategyInfo(string strategyName, string currency, string hour);
 
-      IEnumerable<HistoricalOrders> GetOrdersInfo(string strategyName, string currency, string hour, long id = long.MinValue);
+      IEnumerable<HistoricalOrders> GetOrdersInfo(string strategyName, string currency, string hour);
    }
 }

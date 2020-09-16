@@ -39,19 +39,14 @@ namespace StrategyAnalyzer.DAL
                               && r.Timeframe.Replace(" ", "").Equals(hour, StringComparison.InvariantCultureIgnoreCase));
       }
 
-      public IEnumerable<HistoricalOrders> GetOrdersInfo(string strategyName, string currency, string hour, long id)
+      public IEnumerable<HistoricalOrders> GetOrdersInfo(string strategyName, string currency, string hour)
       {
          var ordersTable = _db.GetCollection<BsonDocument>(OrdersTableName);
          List<BsonDocument> results;
-         if (id == long.MinValue)
-         {
-            results = ordersTable.Find(_ => true).ToList();
-         }
-         else
-         {
-            var filter = Builders<BsonDocument>.Filter.Eq("LinkNumber", id);
-            results = ordersTable.Find(filter).ToList();
-         }         
+
+         results = ordersTable.Find(_ => true).ToList();
+         //var filter = Builders<BsonDocument>.Filter.Eq("LinkNumber", id);
+         //results = ordersTable.Find(filter).ToList();
          var ordersAsList = results.Select(r => BsonSerializer.Deserialize<HistoricalOrders>(r));
          return ordersAsList;
       }

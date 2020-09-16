@@ -100,11 +100,24 @@ namespace MarketDataLoader.Converters
          var YminusYAvarage = new List<double>();
          var XYRatio = new List<double>(); // sum of this should be taken as nominator
 
-         foreach (var dateItem in _orderDatesAsNumbers)
+         foreach (var calendarLog in _calendarLogs)
          {
-            var calculatedItem = dateItem - _orderDatesAsNumbers.Average();//U8 - AVERAGE($U$8:$U$1926)
+            var calculatedItem = int.Parse(calendarLog.OperationDay.ToString("yyyyMMdd")) - 
+                              _calendarLogs.Select(day => int.Parse(day.OperationDay.ToString("yyyyMMdd"))).Average();//U8 - AVERAGE($U$8:$U$1926)
             XminusXAvarage.Add(Math.Round(calculatedItem, 0));
          }
+
+         //foreach (var dateItem in _orderDatesAsNumbers)
+         //{
+         //   var calculatedItem = dateItem - _orderDatesAsNumbers.Average();//U8 - AVERAGE($U$8:$U$1926)
+         //   XminusXAvarage.Add(Math.Round(calculatedItem, 0));
+         //}
+         foreach (var calendarLog in _calendarLogs)
+         {
+            var calculatedItem = calendarLog.EodFinRes - _calendarLogs.Select(day => day.EodFinRes).Average();//U8 - AVERAGE($U$8:$U$1926)
+            YminusYAvarage.Add(Math.Round(calculatedItem, 0));
+         }
+
          foreach (var finResult in _finResPerTrade)
          {
             var calculatedItem = finResult - _finResPerTrade.Average();//U8 - AVERAGE($U$8:$U$1926)
@@ -148,54 +161,40 @@ namespace MarketDataLoader.Converters
          foreach (var calendarLog in calendarLogs)
          {
             var historicalOrdersByCurrentDate = historicalOrders.Where(order => calendarLog.TradesClosed.Contains(order.Label));
-            if (historicalOrdersByCurrentDate.Any()) //means some order was executed at this day 
+            foreach (var pickedOrder in historicalOrdersByCurrentDate)
             {
+               //If goes into the loop means some order was executed at this day 
+               // for openOrderCommission pick first 
+               var openOrderCommission = calendarLogs.First(calendarLogItem => calendarLogItem
+                                                     .TradesOpened.Contains(pickedOrder.Label))
+                                                     .AvgCmsn;
 
+               var closingOrderCommission = calendarLog.AvgCmsn;
+               finResult = finResult + pickedOrder.ProfitLoss - openOrderCommission - closingOrderCommission;
+
+               if (highWaterMark < finResult)
+               {
+                  highWaterMark = finResult;
+               }
+               var drawdown = Math.Round((highWaterMark - finResult) / highWaterMark, 6);
+               drawdowns.Add(drawdown);
             }
-         }
-
-         // old implemetation should be reused, but with calendarLogs instead of orderLogs
-         foreach (var orderLog in orderLogs.OrderBy(log => log.OperationDay))
-         {
-            //subtract comission
-            if (orderLog.Comisions.Any())
-            {
-               finResult = finResult - orderLog.Comisions.Sum();
-            }
-
-            var historicalOrder = historicalOrders.FirstOrDefault(order => order.Label == orderLog.Label);
-
-            if (historicalOrder != null) //means some order was executed at this day 
-            {
-               finResult = finResult + historicalOrder.ProfitLoss;
-            }
-            if (highWaterMark < finResult)
-            {
-               highWaterMark = finResult;
-            }
-            
-            var drawdown = Math.Round((highWaterMark - finResult) / highWaterMark, 6);
-            drawdowns.Add(drawdown);
-
-            //preparing data for R-squared calculations 
-            _orderDatesAsNumbers.Add(int.Parse(orderLog.OperationDay.ToString("yyyyMMdd")));
-            _finResPerTrade.Add(finResult);
          }
          return Math.Round(drawdowns.Max() * 100, 2);
       }
 
       private double CalculateAnnualGrowth(List<HistoricalOrderDto> historicalOrders)
       {
-         var initialDeposit = _basicInfo[InitialDepositId].ToDouble();
+         var initialDeposit = _setupInfo.InitialDeposit;
          var finishDeposit = _basicInfo[FinishDepositId].ToDouble();
-         var depositRemainder = Math.Round((finishDeposit - initialDeposit) * 100 / initialDeposit / 100, 4);
+         var depositRemainder = (finishDeposit - initialDeposit) * 100 / initialDeposit / 100;
 
          var backTestDays = (_setupInfo.EndDate - _setupInfo.StartDate).Days;
 
          double powered = (double)365 / (double)backTestDays;
 
          //средний годовой доход = (1 + чистый) в степени(365 / дней в бэктесте) -1
-         var annualGrowth = (Math.Pow(1 + depositRemainder, Math.Round(powered, 4)) - 1) * 100;
+         var annualGrowth = (Math.Pow(1 + depositRemainder, powered) - 1) * 100;
          return Math.Round(annualGrowth, 2);
       }
    }
