@@ -8,6 +8,11 @@ namespace ModelLayer
 {
    public class HistoricalOrderDto
    {
+      public HistoricalOrderDto()
+      {
+         Commissions = new List<double>();
+      }
+
       public string Label { get; set; }
 
       public string Amount { get; set; }
@@ -27,6 +32,10 @@ namespace ModelLayer
       public DateTime CloseDate { get; set; }
 
       public string Comment { get; set; }
+
+      public double DepositCurve { get; set; }
+
+      public double PercentChange { get; set; }
 
       public List<double> Commissions { get; set; }
    }

@@ -45,7 +45,7 @@ namespace MarketDataLoader.Converters
          double tradesPerMonth = _setupInfo.ClosedPositions / (yearsInHistoryWindow * 12);
 
          var annualGrowth = CalculateAnnualGrowth(historicalOrders);
-         var maximumDrowDown = CalculateMaximumDrowdown(historicalOrders, orderLogs, _calendarLogs);
+         var maximumDrowDown = CalculateMaximumDrowdown(historicalOrders);
          var recovery = Math.Round(annualGrowth / maximumDrowDown, 2);
          var rSquared = CalculateRSquared();
 
@@ -142,47 +142,6 @@ namespace MarketDataLoader.Converters
          return Math.Round(RSquared, 2);
       }
 
-      private double CalculateMaximumDrowdown(IEnumerable<HistoricalOrderDto> historicalOrders, 
-                                              IEnumerable<OrderLog> orderLogs, IEnumerable<CalendarLog> calendarLogs)
-      {
-         //initial deposit to be moved
-         double initialDeposit = _basicInfo[InitialDepositId].ToDouble();
-         double finResult = initialDeposit;
-         double highWaterMark = initialDeposit;
-         
-         //to calculate max drawdown
-         var drawdowns = new List<double>();
-
-         //to calculate r-squared
-         //_finResPerTrade.Add(finResult);
-         //var firstDay = orderLogs.OrderBy(log => log.OpenDate).First().OpenDate.AddDays(-1);
-         //_orderDatesAsNumbers.Add(int.Parse(firstDay.ToString("yyyyMMdd")));
-
-         foreach (var calendarLog in calendarLogs)
-         {
-            var historicalOrdersByCurrentDate = historicalOrders.Where(order => calendarLog.TradesClosed.Contains(order.Label));
-            foreach (var pickedOrder in historicalOrdersByCurrentDate)
-            {
-               //If goes into the loop means some order was executed at this day 
-               // for openOrderCommission pick first 
-               var openOrderCommission = calendarLogs.First(calendarLogItem => calendarLogItem
-                                                     .TradesOpened.Contains(pickedOrder.Label))
-                                                     .AvgCmsn;
-
-               var closingOrderCommission = calendarLog.AvgCmsn;
-               finResult = finResult + pickedOrder.ProfitLoss - openOrderCommission - closingOrderCommission;
-
-               if (highWaterMark < finResult)
-               {
-                  highWaterMark = finResult;
-               }
-               var drawdown = Math.Round((highWaterMark - finResult) / highWaterMark, 6);
-               drawdowns.Add(drawdown);
-            }
-         }
-         return Math.Round(drawdowns.Max() * 100, 2);
-      }
-
       private double CalculateAnnualGrowth(List<HistoricalOrderDto> historicalOrders)
       {
          var initialDeposit = _setupInfo.InitialDeposit;
@@ -196,6 +155,20 @@ namespace MarketDataLoader.Converters
          //средний годовой доход = (1 + чистый) в степени(365 / дней в бэктесте) -1
          var annualGrowth = (Math.Pow(1 + depositRemainder, powered) - 1) * 100;
          return Math.Round(annualGrowth, 2);
+      }
+
+      private double CalculateMaximumDrowdown(List<HistoricalOrderDto> historicalOrders)
+      {
+         double highWaterMark = 0;
+         var drawdowns = new List<double>();
+         foreach (var trade in historicalOrders)
+         {
+            highWaterMark = trade.DepositCurve >= highWaterMark ? trade.DepositCurve : highWaterMark;
+            //(hwm - кривая_капитала_на_эту_сделку) / hwm
+            var drawdown = (highWaterMark - trade.DepositCurve) / highWaterMark;
+            drawdowns.Add(drawdown);
+         }
+         return Math.Round(drawdowns.Max() * 100, 2);
       }
    }
 }

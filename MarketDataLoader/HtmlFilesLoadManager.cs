@@ -53,12 +53,20 @@ namespace MarketDataLoader
             var paramsInfo = _htmlReader.ReadDetailsTables(TableType.ParamsInfo);
             var detailsInfo = _htmlReader.ReadDetailsTables(TableType.DetailsInfo);
 
-
+            // setupInfo is agreggated data for preparing calendarLogs
             SetupInfo setupInfo = PrepareSetupInfo(htmlFile, basicInfo, paramsInfo, detailsInfo, strategyName, currency);
 
             AdjustOrdersDates(historicalOrders);
-            var calendarLogs = SetupCalendarLogs(setupInfo.StartDate, setupInfo.EndDate, historicalOrders, orderLogs, setupInfo);
-            
+            var calendarLogs = SetupCalendarLogs(historicalOrders, orderLogs, setupInfo);
+
+            EnrichHistoricalOrdersWithCommissions(calendarLogs, historicalOrders);
+
+            //Calculate Deposit curve separately because it will be needed to calculate drowdowns!
+            CalculateDepositCurve(historicalOrders, setupInfo.InitialDeposit);
+
+            CalculatePercentChange(historicalOrders, setupInfo.InitialDeposit);
+
+
 
             // should be modified, commissions should be already calculated in Enrichment step
             var strategyResultsConverter = new StrategyResultsDtoConverter(basicInfo, paramsInfo, detailsInfo, setupInfo, calendarLogs);
@@ -80,6 +88,45 @@ namespace MarketDataLoader
             {
                Log.ErrorFormat("Error during {0} file loading. Error message: {1}", htmlFile, e.Message);
                throw;
+            }
+         }
+      }
+
+      private void CalculateDepositCurve(List<HistoricalOrderDto> historicalOrders, double initialDeposit)
+      {
+         bool isFirstOrder = true;
+         double previousDepositCurve = initialDeposit;
+         foreach (var trade in historicalOrders)
+         {
+            trade.DepositCurve = previousDepositCurve + trade.ProfitLoss - trade.Commissions.Sum();
+            previousDepositCurve = trade.DepositCurve;
+         }
+      }
+
+      private void CalculatePercentChange(List<HistoricalOrderDto> historicalOrders, double initialDeposit)
+      {
+         double previousDepositCurve = initialDeposit;
+         foreach (var trade in historicalOrders)
+         {
+            trade.PercentChange = (trade.DepositCurve - previousDepositCurve) / previousDepositCurve;
+            previousDepositCurve = trade.DepositCurve;
+         }
+      }
+
+      private void EnrichHistoricalOrdersWithCommissions(List<CalendarLog> calendarLogs, List<HistoricalOrderDto> historicalOrders)
+      {
+         foreach (var calendarLog in calendarLogs)
+         {
+            foreach (var trade in historicalOrders)
+            {
+               if (calendarLog.TradesClosed.Contains(trade.Label))
+               {
+                  trade.Commissions.Add(calendarLog.AvgCmsn);
+               }
+               if (calendarLog.TradesOpened.Contains(trade.Label))
+               {
+                  trade.Commissions.Add(calendarLog.AvgCmsn);
+               }
             }
          }
       }
@@ -119,14 +166,14 @@ namespace MarketDataLoader
          return setupInfo;
       }
 
-      private List<CalendarLog> SetupCalendarLogs(DateTime startDate, DateTime endDate, IEnumerable<HistoricalOrderDto> historicalOrders, 
-                                                                                        IEnumerable<OrderLog> orderLogs, SetupInfo setupInfo)
+      private List<CalendarLog> SetupCalendarLogs(IEnumerable<HistoricalOrderDto> historicalOrders, 
+                                                             IEnumerable<OrderLog> orderLogs, SetupInfo setupInfo)
       {
          var calendarLogs = new List<CalendarLog>();
-         DateTime currentdate = startDate.AddDays(-1);
+         DateTime currentdate = setupInfo.StartDate.AddDays(-1);
 
          //preparing calendarLogs skeleton 
-         while (DateTime.Compare(currentdate, endDate) <= 0)
+         while (DateTime.Compare(currentdate, setupInfo.EndDate) <= 0)
          {
             var calendarLog = new CalendarLog()
             {
@@ -168,7 +215,7 @@ namespace MarketDataLoader
                calendarLog.AvgCmsn = calendarLog.SumCmsn / tradesTotal;
             }
          }
-         SetupEodResult(calendarLogs, startDate, setupInfo.InitialDeposit, historicalOrders);
+         SetupEodResult(calendarLogs, setupInfo.StartDate, setupInfo.InitialDeposit, historicalOrders);
          return calendarLogs;
       }
 
