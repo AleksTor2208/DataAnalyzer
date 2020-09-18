@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace MarketDataLoader.Model
+namespace ModelLayer
 {
    public class OrderLog
    {

@@ -1,14 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using MarketDataLoader.ExtensionMethods;
-using MarketDataLoader.Model;
+using MarketData.Common.ExtensionMethods;
 using ModelLayer;
 
-namespace MarketDataLoader.Converters
+namespace MarketData.Common
 {
-   class StrategyResultsCalculator
+   public class StrategyResultsCalculator
    {
       private readonly Dictionary<string, string> _basicInfo;
       private readonly Dictionary<string, string> _paramsInfo;
@@ -36,7 +34,7 @@ namespace MarketDataLoader.Converters
          _finResPerTrade = new List<double>();
       }
 
-      internal StrategyResultsDto Calculate(List<HistoricalOrderDto> historicalOrders, IEnumerable<OrderLog> orderLogs, Dictionary<string, string> paramsInfo, long linkNumber)
+      public StrategyResultsDto Calculate(List<HistoricalOrderDto> historicalOrders, IEnumerable<OrderLog> orderLogs, Dictionary<string, string> paramsInfo, long linkNumber)
       {
          //количество лет в историческом окне (дата_конец - дата_начало + 1) 
          int yearsInHistoryWindow = (_setupInfo.EndDate - _setupInfo.StartDate.AddDays(1)).Days / 365;

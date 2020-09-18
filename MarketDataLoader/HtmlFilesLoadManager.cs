@@ -2,8 +2,8 @@
 using log4net.Appender;
 using log4net.Repository;
 using MarketDataLoader.Converters;
-using MarketDataLoader.ExtensionMethods;
-using MarketDataLoader.Model;
+using MarketData.Common.ExtensionMethods;
+using MarketData.Common;
 using ModelLayer;
 using MongoDB.Bson;
 using System;

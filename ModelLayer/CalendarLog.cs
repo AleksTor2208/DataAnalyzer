@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MarketDataLoader.Model
+namespace ModelLayer
 {
-   class CalendarLog
+   public class CalendarLog
    {
       public CalendarLog()
       {

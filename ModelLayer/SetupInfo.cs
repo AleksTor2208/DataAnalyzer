@@ -1,12 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace MarketDataLoader.Model
+namespace ModelLayer
 {
-   class SetupInfo
+   public class SetupInfo
    {
       public int ClosedPositions { get; set; }
       public string StrategyName { get; set; }
