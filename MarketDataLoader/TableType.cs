@@ -6,12 +6,13 @@ using System.Threading.Tasks;
 
 namespace MarketDataLoader
 {
-   enum TableType
+   internal enum TableType
    {
       BasicInfo = 0,
       ParamsInfo = 1,
       DetailsInfo = 2,
-      OrdersTable = 4,
+      OpenedOrders = 3,
+      ClosedOrders = 4,
       OrderLogs = 5
    }
 }

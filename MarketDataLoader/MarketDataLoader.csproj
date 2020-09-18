@@ -196,7 +196,7 @@
     <Compile Include="Model\CalendarLog.cs" />
     <Compile Include="Model\OrderLogs.cs" />
     <Compile Include="Converters\OrdersLogConverter.cs" />
-    <Compile Include="Converters\StrategyResultsDtoConverter.cs" />
+    <Compile Include="Converters\StrategyResultsCalculator.cs" />
     <Compile Include="DbConnection.cs" />
     <Compile Include="ExtensionMethods\StringExtensions.cs" />
     <Compile Include="HtmlDocumentReader.cs" />

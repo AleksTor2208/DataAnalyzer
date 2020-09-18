@@ -42,7 +42,15 @@ namespace MarketDataLoader
             _htmlReader.SelectTablesFromFile(htmlFile);       
             var orderLogs = _htmlReader.ReadOrderLogs();
 
-            var historicalOrders = _htmlReader.ReadHistoricalOrders();
+            var historicalOrders = _htmlReader.ReadHistoricalOrders(TableType.ClosedOrders, 
+                                                   OrdersTableHeaders.ClosedOrdersHeaders, new ClosedOrdersConverter());
+
+            var openedOrders = _htmlReader.ReadHistoricalOrders(TableType.OpenedOrders,
+                                                   OrdersTableHeaders.OpenedOrdersHeaders, new OpenedOrdersConverter());
+            if (openedOrders.Any())
+            {
+               historicalOrders.AddRange(openedOrders);
+            }
 
             var currency = _htmlReader.GetCurrency();
             var strategyName = _htmlReader.GetStrategyName();//historicalOrders.First().Comment;
@@ -56,7 +64,7 @@ namespace MarketDataLoader
             // setupInfo is agreggated data for preparing calendarLogs
             SetupInfo setupInfo = PrepareSetupInfo(htmlFile, basicInfo, paramsInfo, detailsInfo, strategyName, currency);
 
-            AdjustOrdersDates(historicalOrders);
+            SetupAdjustedOrderDates(historicalOrders);
             var calendarLogs = SetupCalendarLogs(historicalOrders, orderLogs, setupInfo);
 
             EnrichHistoricalOrdersWithCommissions(calendarLogs, historicalOrders);
@@ -66,13 +74,11 @@ namespace MarketDataLoader
 
             CalculatePercentChange(historicalOrders, setupInfo.InitialDeposit);
 
-
-
             // should be modified, commissions should be already calculated in Enrichment step
-            var strategyResultsConverter = new StrategyResultsDtoConverter(basicInfo, paramsInfo, detailsInfo, setupInfo, calendarLogs);
-            var strategyResultsAsBSon = strategyResultsConverter.Convert(historicalOrders, orderLogs, paramsInfo, linkNumber).ToBsonDocument();
+            var strategyResultsConverter = new StrategyResultsCalculator(basicInfo, paramsInfo, detailsInfo, setupInfo, calendarLogs);
+            var strategyResultsAsBSon = strategyResultsConverter.Calculate(historicalOrders, orderLogs, paramsInfo, linkNumber).ToBsonDocument();
 
-
+            //GenerateHistoricalOrdersAsTable(historicalOrders);
             var historicalOrdersBson = BSonConverter.GenerateHistoricalOrdersAsBSon(historicalOrders, paramsInfo, linkNumber);
 
             var ordersInfo = BSonConverter.GenerateOrdersInfoDocument(basicInfo, paramsInfo, detailsInfo);
@@ -88,6 +94,26 @@ namespace MarketDataLoader
             {
                Log.ErrorFormat("Error during {0} file loading. Error message: {1}", htmlFile, e.Message);
                throw;
+            }
+         }
+      }
+
+      private void GenerateHistoricalOrdersAsTable(List<HistoricalOrderDto> historicalOrders)
+      {
+         using (StreamWriter file = new StreamWriter(@"C:\Users\ASUS\Documents\FX\sample_reports\test\will_sar_xover_v2_TradeLogs.csv"))
+         {
+            file.WriteLine("Direction, OpenPrice, ClosePrice, Profit/Loss, Profit/Loss in pips, Open Date, Close Date, " +
+               "First Commission, Second Commission, Deposit Curve, Percent Change, Adjusted Open Date, Adjusted Close Date");
+            foreach (var order in historicalOrders.ToArray())
+            {
+               if (Array.IndexOf(historicalOrders.ToArray(), order) == historicalOrders.Count() - 1)
+               {
+                  continue;
+               }
+               file.WriteLine($"{order.Direction}, {order.OpenPrice}, {order.ClosePrice}, " +
+                  $"{order.ProfitLoss}, {order.ProfitLossInPips}, {order.OpenDate}, {order.CloseDate}, " +
+                  $"{order.Commissions[0]}, {order.Commissions[1]}, {order.DepositCurve}, " +
+                  $"{order.PercentChange}, {order.AdjustedOpenDate}, {order.AdjustedCloseDate}");
             }
          }
       }
@@ -131,22 +157,33 @@ namespace MarketDataLoader
          }
       }
 
-      private void AdjustOrdersDates(List<HistoricalOrderDto> historicalOrders)
+      private void SetupAdjustedOrderDates(List<HistoricalOrderDto> historicalOrders)
       {
          //if order.OpenDate.DayOfWeek
          // OpenDate/ClosedDate nado ostavit'!!!
-         const int LastOperationHour = 21;
+         
+         const int LastHour = 21;
          foreach (var order in historicalOrders)
          {
-            if (order.OpenDate.Hour > LastOperationHour)
+            var oDate = order.OpenDate;
+            if (DateTime.Compare(order.OpenDate, new DateTime(oDate.Year, oDate.Month, oDate.Day, LastHour, 0, 0)) > 0)
             {
                var tempDate = order.OpenDate.AddDays(1);
-               order.OpenDate = new DateTime(tempDate.Year, tempDate.Month, tempDate.Day);
+               order.AdjustedOpenDate = new DateTime(tempDate.Year, tempDate.Month, tempDate.Day);
             }
-            if (order.CloseDate.Hour > LastOperationHour)
+            else
+            {
+               order.AdjustedOpenDate = order.OpenDate;
+            }
+            var cDate = order.CloseDate;
+            if (DateTime.Compare(order.CloseDate, new DateTime(cDate.Year, cDate.Month, cDate.Day, LastHour, 0, 0)) > 0)
             {
                var tempDate = order.CloseDate.AddDays(1);
-               order.CloseDate = new DateTime(tempDate.Year, tempDate.Month, tempDate.Day);
+               order.AdjustedCloseDate = new DateTime(tempDate.Year, tempDate.Month, tempDate.Day);
+            }
+            else
+            {
+               order.AdjustedCloseDate = order.CloseDate;
             }
          }
       }
@@ -194,13 +231,13 @@ namespace MarketDataLoader
          foreach (var calendarLog in calendarLogs)
          {
             foreach (var currentOpenedOrder in historicalOrders.Where(order => DateTime.Compare(
-                                                               order.OpenDate.Date, calendarLog.OperationDay.Date) == 0))
+                                                               order.AdjustedOpenDate.Date, calendarLog.OperationDay.Date) == 0))
             {
                calendarLog.TradesOpened.Add(currentOpenedOrder.Label);
             }
 
             foreach (var currentClosedOrder in historicalOrders.Where(order => DateTime.Compare(
-                                                                        order.CloseDate.Date, calendarLog.OperationDay.Date) == 0))
+                                                                        order.AdjustedCloseDate.Date, calendarLog.OperationDay.Date) == 0))
             {
                calendarLog.TradesClosed.Add(currentClosedOrder.Label);
             }

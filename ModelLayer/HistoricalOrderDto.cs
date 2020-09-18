@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ModelLayer
 {
@@ -30,6 +27,10 @@ namespace ModelLayer
       public DateTime OpenDate { get; set; }
 
       public DateTime CloseDate { get; set; }
+
+      public DateTime AdjustedOpenDate { get; set; }
+
+      public DateTime AdjustedCloseDate { get; set; }
 
       public string Comment { get; set; }
 

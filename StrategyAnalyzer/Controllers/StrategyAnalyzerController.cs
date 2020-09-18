@@ -42,17 +42,17 @@ namespace StrategyAnalyzer.Controllers
       public IHttpActionResult /*IEnumerable<StrategyResultsDto>*/ GetOrdersInfo(string strategyName, string currency, string timeframe)
       {
          Log.Info("I'm inside GetOrdersInfo()");
-         var result = _dbProvider.GetOrdersInfo(strategyName, currency, timeframe);
+         var result = _dbProvider.GetOrders(strategyName, currency, timeframe);
          Log.InfoFormat("Orders data had been returns. Amount number: {0}", result.Count());
          return Ok(new { result });
       }
 
       [HttpGet]
-      [Route("validation/{strategyName}/{currency}/{timeframe}/{trainPeriod}/{validationPeriod}")]
+      [Route("{strategyName}/validation/{currency}/{timeframe}/{trainPeriod}/{validationPeriod}")]
       public IHttpActionResult GetValidationInfo(string strategyName, string currency, 
                                                  string timeframe, string trainPeriod, string validationPeriod)
       {
-         var allHistoryOrders = _dbProvider.GetOrdersInfo(strategyName, currency, timeframe);
+         var allHistoryOrders = _dbProvider.GetOrders(strategyName, currency, timeframe);
 
          var globalStart = new DateTime(2015, 01, 5);
          var globalEnd = new DateTime(2019, 12, 31);
@@ -83,8 +83,8 @@ namespace StrategyAnalyzer.Controllers
          {
             var sliceStorageItem = new SetupSlice();
             sliceStorageItem.PeriodSlice = slice;
-            sliceStorageItem.Orders = ordersSetup.Orders.Where(order => DateTime.Compare(order.OpenDate, slice.TrainPeriod.LocalStart) >= 0 &&
-                                                                        DateTime.Compare(order.CloseDate, slice.TrainPeriod.LocalEnd) <= 0);
+            sliceStorageItem.Orders = ordersSetup.Orders.Where(order => DateTime.Compare(order.AdjustedOpenDate, slice.TrainPeriod.LocalStart) >= 0 &&
+                                                                        DateTime.Compare(order.AdjustedCloseDate, slice.TrainPeriod.LocalEnd) <= 0);
 
             sliceStorage.Add(sliceStorageItem);
          }

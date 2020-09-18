@@ -39,7 +39,7 @@ namespace StrategyAnalyzer.DAL
                               && r.Timeframe.Replace(" ", "").Equals(hour, StringComparison.InvariantCultureIgnoreCase));
       }
 
-      public IEnumerable<HistoricalOrders> GetOrdersInfo(string strategyName, string currency, string hour)
+      public IEnumerable<HistoricalOrders> GetOrders(string strategyName, string currency, string hour)
       {
          var ordersTable = _db.GetCollection<BsonDocument>(OrdersTableName);
          List<BsonDocument> results;

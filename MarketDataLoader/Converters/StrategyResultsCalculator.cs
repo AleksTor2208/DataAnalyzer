@@ -8,7 +8,7 @@ using ModelLayer;
 
 namespace MarketDataLoader.Converters
 {
-   class StrategyResultsDtoConverter
+   class StrategyResultsCalculator
    {
       private readonly Dictionary<string, string> _basicInfo;
       private readonly Dictionary<string, string> _paramsInfo;
@@ -24,7 +24,7 @@ namespace MarketDataLoader.Converters
       private List<int> _orderDatesAsNumbers;
       private List<double> _finResPerTrade;
 
-      public StrategyResultsDtoConverter(Dictionary<string, string> basicInfo, Dictionary<string, string> paramsInfo, 
+      public StrategyResultsCalculator(Dictionary<string, string> basicInfo, Dictionary<string, string> paramsInfo, 
                                          Dictionary<string, string> detailsInfo, SetupInfo setupInfo, List<CalendarLog> calendarLogs)
       {
          _basicInfo = basicInfo;
@@ -36,7 +36,7 @@ namespace MarketDataLoader.Converters
          _finResPerTrade = new List<double>();
       }
 
-      internal StrategyResultsDto Convert(List<HistoricalOrderDto> historicalOrders, IEnumerable<OrderLog> orderLogs, Dictionary<string, string> paramsInfo, long linkNumber)
+      internal StrategyResultsDto Calculate(List<HistoricalOrderDto> historicalOrders, IEnumerable<OrderLog> orderLogs, Dictionary<string, string> paramsInfo, long linkNumber)
       {
          //количество лет в историческом окне (дата_конец - дата_начало + 1) 
          int yearsInHistoryWindow = (_setupInfo.EndDate - _setupInfo.StartDate.AddDays(1)).Days / 365;
@@ -46,7 +46,7 @@ namespace MarketDataLoader.Converters
 
          var annualGrowth = CalculateAnnualGrowth(historicalOrders);
          var maximumDrowDown = CalculateMaximumDrowdown(historicalOrders);
-         var recovery = Math.Round(annualGrowth / maximumDrowDown, 2);
+         var recovery = CalculateRecovery(annualGrowth, maximumDrowDown);
          var rSquared = CalculateRSquared();
 
          var resultsDto = new StrategyResultsDto
@@ -64,7 +64,20 @@ namespace MarketDataLoader.Converters
             Parameters = paramsInfo
          };
          return resultsDto;
-      }      
+      }
+
+      private double CalculateRecovery(double annualGrowth, double maximumDrowDown)
+      {
+         if (annualGrowth <= 0)
+         {
+            return 0;
+         }
+         if (maximumDrowDown == 0)
+         {
+            return 999;
+         }
+         return Math.Round(annualGrowth / maximumDrowDown, 2);
+      }
 
       private Timeframe ConvertTimeframe(string convertable)
       {
@@ -146,7 +159,8 @@ namespace MarketDataLoader.Converters
       {
          var initialDeposit = _setupInfo.InitialDeposit;
          var finishDeposit = _basicInfo[FinishDepositId].ToDouble();
-         var depositRemainder = (finishDeposit - initialDeposit) * 100 / initialDeposit / 100;
+         var newFinishDeposit = historicalOrders.Last().DepositCurve;
+         var depositRemainder = (newFinishDeposit - initialDeposit) * 100 / initialDeposit / 100;
 
          var backTestDays = (_setupInfo.EndDate - _setupInfo.StartDate).Days;
 

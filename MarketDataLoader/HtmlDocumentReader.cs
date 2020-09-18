@@ -19,18 +19,17 @@ namespace MarketDataLoader
       private HtmlDocument _doc = new HtmlDocument();
       private HtmlNodeCollection _tables;
 
-      internal List<HistoricalOrderDto> ReadHistoricalOrders()
+      internal List<HistoricalOrderDto> ReadHistoricalOrders(TableType tableType, string[] headers, IOrdersConverter converter)
       {
-         var tableWithHistoricalOrders = GetTableWithHistoricOrders(_tables).InnerHtml;
+         var tableWithHistoricalOrders = GetTableWithHistoricOrders(_tables, tableType, headers).InnerHtml;
          string cleanedTable = Regex.Replace(tableWithHistoricalOrders, @"\t|\n|\r", "");
          var splittedTable = SplitRows(cleanedTable); 
          var historicalOrders = new List<HistoricalOrderDto>();
-         var historicalOrderConverter = new HistoricalOrdersConverter();
          foreach (var row in splittedTable)
          {
             if (row.Contains("<th>"))
                continue;
-            historicalOrders.Add(historicalOrderConverter.Convert(row));
+            historicalOrders.Add(converter.Convert(row));
          }
          return historicalOrders;
       }
@@ -121,16 +120,14 @@ namespace MarketDataLoader
          return ordersTableInfo;
       }
 
-      private HtmlNode GetTableWithHistoricOrders(HtmlNodeCollection tables)
+      private HtmlNode GetTableWithHistoricOrders(HtmlNodeCollection tables, TableType tableType, string[] headers)
       {
-         string[] headers = { "Label", "Amount", "Direction", "Open price", "Close price",
-                              "Profit/Loss", "Profit/Loss in pips", "Open date", "Close date", "Comment" };
-         var currentTable = tables[(int)TableType.OrdersTable];
+         var currentTable = tables[(int)tableType];
          if (headers.All(item => currentTable.ChildNodes[1].InnerHtml.Contains(item)))
          {
             return currentTable;
          }
-         return null;
+         throw new Exception(string.Format("{0} table headers doesn't match.", tableType));
       }
    }
 }
