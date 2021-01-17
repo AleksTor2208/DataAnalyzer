@@ -10,7 +10,6 @@ namespace ModelLayer
    [BsonIgnoreExtraElements]
    public class StrategyResultsDto
    {
-      public long Id { get; set; }
       public double OrdersPerMonth { get; set; }
       public double AnualGrowth { get; set; }
       public double MaxDrawDown { get; set; }

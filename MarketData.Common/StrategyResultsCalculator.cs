@@ -8,10 +8,6 @@ namespace MarketData.Common
 {
    public class StrategyResultsCalculator
    {
-      private readonly Dictionary<string, string> _basicInfo;
-      private readonly Dictionary<string, string> _paramsInfo;
-      private readonly Dictionary<string, string> _detailsInfo;
-      private readonly List<CalendarLog> _calendarLogs;
       private readonly SetupInfo _setupInfo;
 
       private const string InitialDepositId = "Initial deposit";
@@ -22,19 +18,18 @@ namespace MarketData.Common
       private List<int> _orderDatesAsNumbers;
       private List<double> _finResPerTrade;
 
-      public StrategyResultsCalculator(Dictionary<string, string> basicInfo, Dictionary<string, string> paramsInfo, 
-                                         Dictionary<string, string> detailsInfo, SetupInfo setupInfo, List<CalendarLog> calendarLogs)
+      public StrategyResultsCalculator()
       {
-         _basicInfo = basicInfo;
-         _paramsInfo = paramsInfo;
-         _detailsInfo = detailsInfo;
+      }
+
+      public StrategyResultsCalculator(SetupInfo setupInfo)
+      {
          _setupInfo = setupInfo;
-         _calendarLogs = calendarLogs;
          _orderDatesAsNumbers = new List<int>();
          _finResPerTrade = new List<double>();
       }
 
-      public StrategyResultsDto Calculate(List<HistoricalOrderDto> historicalOrders, IEnumerable<OrderLog> orderLogs, Dictionary<string, string> paramsInfo, long linkNumber)
+      public StrategyResultsDto Calculate(List<HistoricalOrderDto> historicalOrders, List<CalendarLog> calendarLogs, Dictionary<string, string> paramsInfo)
       {
          //количество лет в историческом окне (дата_конец - дата_начало + 1) 
          int yearsInHistoryWindow = (_setupInfo.EndDate - _setupInfo.StartDate.AddDays(1)).Days / 365;
@@ -45,11 +40,10 @@ namespace MarketData.Common
          var annualGrowth = CalculateAnnualGrowth(historicalOrders);
          var maximumDrowDown = CalculateMaximumDrowdown(historicalOrders);
          var recovery = CalculateRecovery(annualGrowth, maximumDrowDown);
-         var rSquared = CalculateRSquared();
+         var rSquared = CalculateRSquared(calendarLogs);
 
          var resultsDto = new StrategyResultsDto
          {
-            Id = linkNumber,
             OrdersPerMonth = GetAvarageOrdersQuantityInMonth(historicalOrders.Count()),
             AnualGrowth = annualGrowth,
             MaxDrawDown = maximumDrowDown,
@@ -64,7 +58,7 @@ namespace MarketData.Common
          return resultsDto;
       }
 
-      private double CalculateRecovery(double annualGrowth, double maximumDrowDown)
+      public double CalculateRecovery(double annualGrowth, double maximumDrowDown)
       {
          if (annualGrowth <= 0)
          {
@@ -105,33 +99,22 @@ namespace MarketData.Common
          return Math.Round(result,2);
       }
 
-      private double CalculateRSquared()
+      public double CalculateRSquared(List<CalendarLog> calendarLogs)
       {
          var XminusXAvarage = new List<double>();
          var YminusYAvarage = new List<double>();
          var XYRatio = new List<double>(); // sum of this should be taken as nominator
 
-         foreach (var calendarLog in _calendarLogs)
+         foreach (var calendarLog in calendarLogs)
          {
             var calculatedItem = int.Parse(calendarLog.OperationDay.ToString("yyyyMMdd")) - 
-                              _calendarLogs.Select(day => int.Parse(day.OperationDay.ToString("yyyyMMdd"))).Average();//U8 - AVERAGE($U$8:$U$1926)
+                              calendarLogs.Select(day => int.Parse(day.OperationDay.ToString("yyyyMMdd"))).Average();//U8 - AVERAGE($U$8:$U$1926)
             XminusXAvarage.Add(Math.Round(calculatedItem, 0));
          }
 
-         //foreach (var dateItem in _orderDatesAsNumbers)
-         //{
-         //   var calculatedItem = dateItem - _orderDatesAsNumbers.Average();//U8 - AVERAGE($U$8:$U$1926)
-         //   XminusXAvarage.Add(Math.Round(calculatedItem, 0));
-         //}
-         foreach (var calendarLog in _calendarLogs)
+         foreach (var calendarLog in calendarLogs)
          {
-            var calculatedItem = calendarLog.EodFinRes - _calendarLogs.Select(day => day.EodFinRes).Average();//U8 - AVERAGE($U$8:$U$1926)
-            YminusYAvarage.Add(Math.Round(calculatedItem, 0));
-         }
-
-         foreach (var finResult in _finResPerTrade)
-         {
-            var calculatedItem = finResult - _finResPerTrade.Average();//U8 - AVERAGE($U$8:$U$1926)
+            var calculatedItem = calendarLog.EodFinRes - calendarLogs.Select(day => day.EodFinRes).Average();//U8 - AVERAGE($U$8:$U$1926)
             YminusYAvarage.Add(Math.Round(calculatedItem, 0));
          }
 
@@ -153,10 +136,9 @@ namespace MarketData.Common
          return Math.Round(RSquared, 2);
       }
 
-      private double CalculateAnnualGrowth(List<HistoricalOrderDto> historicalOrders)
+      public double CalculateAnnualGrowth(List<HistoricalOrderDto> historicalOrders)
       {
          var initialDeposit = _setupInfo.InitialDeposit;
-         var finishDeposit = _basicInfo[FinishDepositId].ToDouble();
          var newFinishDeposit = historicalOrders.Last().DepositCurve;
          var depositRemainder = (newFinishDeposit - initialDeposit) * 100 / initialDeposit / 100;
 
@@ -169,7 +151,7 @@ namespace MarketData.Common
          return Math.Round(annualGrowth, 2);
       }
 
-      private double CalculateMaximumDrowdown(List<HistoricalOrderDto> historicalOrders)
+      public double CalculateMaximumDrowdown(List<HistoricalOrderDto> historicalOrders)
       {
          double highWaterMark = 0;
          var drawdowns = new List<double>();

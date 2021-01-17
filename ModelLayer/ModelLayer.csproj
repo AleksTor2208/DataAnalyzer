@@ -52,8 +52,9 @@
     <Compile Include="SetupInfo.cs" />
     <Compile Include="StrategyResultsDto.cs" />
     <Compile Include="TimeFrame.cs" />
-    <Compile Include="SlicePeriod.cs" />
-    <Compile Include="SetupSlice.cs" />
+    <Compile Include="Validation\SlicePeriod.cs" />
+    <Compile Include="Validation\SetupSlice.cs" />
+    <Compile Include="Validation\Statistics.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

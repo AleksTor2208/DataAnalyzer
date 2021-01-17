@@ -10,8 +10,6 @@ namespace ModelLayer
    [BsonIgnoreExtraElements]
    public class HistoricalOrders
    {
-      public long LinkNumber { get; set; }
-
       public HistoricalOrders(IEnumerable<HistoricalOrderDto> orders)
       {
          Orders = orders;

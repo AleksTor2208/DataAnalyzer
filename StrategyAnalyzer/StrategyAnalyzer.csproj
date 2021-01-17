@@ -160,6 +160,7 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Startup.cs" />
+    <Compile Include="Validation.cs" />
     <Compile Include="WindsorDependencyScope.cs" />
     <Compile Include="WindsorHttpDependencyResolver.cs" />
     <Compile Include="Windsor\ConfigurationInstaller.cs" />
@@ -170,6 +171,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\MarketData.Common\MarketData.Common.csproj">
+      <Project>{1f9a8b89-a0e9-4678-8266-8f7b128000fd}</Project>
+      <Name>MarketData.Common</Name>
+    </ProjectReference>
     <ProjectReference Include="..\ModelLayer\ModelLayer.csproj">
       <Project>{EEDB9D17-00B1-4AC1-B801-A1E495989E63}</Project>
       <Name>ModelLayer</Name>

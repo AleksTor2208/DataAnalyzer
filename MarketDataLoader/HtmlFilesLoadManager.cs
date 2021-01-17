@@ -53,9 +53,7 @@ namespace MarketDataLoader
             }
 
             var currency = _htmlReader.GetCurrency();
-            var strategyName = _htmlReader.GetStrategyName();//historicalOrders.First().Comment;
-
-            long linkNumber = _dbConnection.GetLinkNumber(strategyName).Result;
+            var strategyName = _htmlReader.GetStrategyName();
 
             var basicInfo = _htmlReader.ReadDetailsTables(TableType.BasicInfo);
             var paramsInfo = _htmlReader.ReadDetailsTables(TableType.ParamsInfo);
@@ -65,7 +63,8 @@ namespace MarketDataLoader
             SetupInfo setupInfo = PrepareSetupInfo(htmlFile, basicInfo, paramsInfo, detailsInfo, strategyName, currency);
 
             SetupAdjustedOrderDates(historicalOrders);
-            var calendarLogs = SetupCalendarLogs(historicalOrders, orderLogs, setupInfo);
+            var calendarLogsConstructor = new CalendarLogsCreator(historicalOrders);
+            var calendarLogs = calendarLogsConstructor.SetupCalendarLogs(orderLogs, setupInfo);
 
             EnrichHistoricalOrdersWithCommissions(calendarLogs, historicalOrders);
 
@@ -75,11 +74,14 @@ namespace MarketDataLoader
             CalculatePercentChange(historicalOrders, setupInfo.InitialDeposit);
 
             // should be modified, commissions should be already calculated in Enrichment step
-            var strategyResultsConverter = new StrategyResultsCalculator(basicInfo, paramsInfo, detailsInfo, setupInfo, calendarLogs);
-            var strategyResultsAsBSon = strategyResultsConverter.Calculate(historicalOrders, orderLogs, paramsInfo, linkNumber).ToBsonDocument();
+            var strategyResultsCalculator = new StrategyResultsCalculator(setupInfo);
+            var strategyResultsAsBSon = strategyResultsCalculator.Calculate(historicalOrders,
+                                                                    calendarLogs, paramsInfo).ToBsonDocument();
 
-            //GenerateHistoricalOrdersAsTable(historicalOrders);
-            var historicalOrdersBson = BSonConverter.GenerateHistoricalOrdersAsBSon(historicalOrders, paramsInfo, linkNumber);
+            // This method is to render historical orders in csv file if needed
+            GenerateHistoricalOrdersAsTable(historicalOrders);
+
+            var historicalOrdersBson = BSonConverter.GenerateHistoricalOrdersAsBSon(historicalOrders, paramsInfo);
 
             var ordersInfo = BSonConverter.GenerateOrdersInfoDocument(basicInfo, paramsInfo, detailsInfo);
             try
@@ -100,7 +102,8 @@ namespace MarketDataLoader
 
       private void GenerateHistoricalOrdersAsTable(List<HistoricalOrderDto> historicalOrders)
       {
-         using (StreamWriter file = new StreamWriter(@"C:\Users\ASUS\Documents\FX\sample_reports\test\will_sar_xover_v2_TradeLogs.csv"))
+         var path = @"C:\Users\ASUS\Documents\FX\sample_reports\test\dupa.csv";
+         using (StreamWriter file = new StreamWriter(path))
          {
             file.WriteLine("Direction, OpenPrice, ClosePrice, Profit/Loss, Profit/Loss in pips, Open Date, Close Date, " +
                "First Commission, Second Commission, Deposit Curve, Percent Change, Adjusted Open Date, Adjusted Close Date");
@@ -120,7 +123,6 @@ namespace MarketDataLoader
 
       private void CalculateDepositCurve(List<HistoricalOrderDto> historicalOrders, double initialDeposit)
       {
-         bool isFirstOrder = true;
          double previousDepositCurve = initialDeposit;
          foreach (var trade in historicalOrders)
          {
@@ -201,86 +203,7 @@ namespace MarketDataLoader
          };
          _htmlReader.SelectStartEndDate(htmlFile, setupInfo);
          return setupInfo;
-      }
-
-      private List<CalendarLog> SetupCalendarLogs(IEnumerable<HistoricalOrderDto> historicalOrders, 
-                                                             IEnumerable<OrderLog> orderLogs, SetupInfo setupInfo)
-      {
-         var calendarLogs = new List<CalendarLog>();
-         DateTime currentdate = setupInfo.StartDate.AddDays(-1);
-
-         //preparing calendarLogs skeleton 
-         while (DateTime.Compare(currentdate, setupInfo.EndDate) <= 0)
-         {
-            var calendarLog = new CalendarLog()
-            {
-               OperationDay = currentdate
-            };
-
-            var logWithCommission = orderLogs.FirstOrDefault(log => DateTime.Compare(log.OperationDay.Date, currentdate.Date) == 0);
-            if (logWithCommission != null)
-            {
-               calendarLog.SumCmsn = logWithCommission.Comisions.Sum();
-            }
-
-            calendarLogs.Add(calendarLog);
-            currentdate = currentdate.AddDays(1);
-         }
-
-         //TradesOpened\TradesClosed set
-         foreach (var calendarLog in calendarLogs)
-         {
-            foreach (var currentOpenedOrder in historicalOrders.Where(order => DateTime.Compare(
-                                                               order.AdjustedOpenDate.Date, calendarLog.OperationDay.Date) == 0))
-            {
-               calendarLog.TradesOpened.Add(currentOpenedOrder.Label);
-            }
-
-            foreach (var currentClosedOrder in historicalOrders.Where(order => DateTime.Compare(
-                                                                        order.AdjustedCloseDate.Date, calendarLog.OperationDay.Date) == 0))
-            {
-               calendarLog.TradesClosed.Add(currentClosedOrder.Label);
-            }
-         }
-
-         //AvgCmsn = сумма_комиссий / (сделок_открыто + сделок_закрыто)
-         foreach (var calendarLog in calendarLogs)
-         {
-            int tradesTotal = calendarLog.TradesOpened.Count() + calendarLog.TradesClosed.Count();
-            if (calendarLog.SumCmsn != 0 && tradesTotal != 0)
-            {
-               calendarLog.AvgCmsn = calendarLog.SumCmsn / tradesTotal;
-            }
-         }
-         SetupEodResult(calendarLogs, setupInfo.StartDate, setupInfo.InitialDeposit, historicalOrders);
-         return calendarLogs;
-      }
-
-      private void SetupEodResult(List<CalendarLog> calendarLogs, DateTime startDate, double initialDeposit, IEnumerable<HistoricalOrderDto> historicalOrders)
-      {
-         double currentEodResult = initialDeposit;
-         foreach (var calendarLog in calendarLogs)
-         {
-            if (DateTime.Compare(calendarLog.OperationDay, startDate) < 0)
-            {
-               calendarLog.EodFinRes = currentEodResult;
-               continue;
-            }
-            //checking 
-            var pickedOrders = historicalOrders.Where(currentOrder => DateTime.Compare(currentOrder.CloseDate.Date, calendarLog.OperationDay.Date) == 0);
-            if (!pickedOrders.Any())
-            {
-               calendarLog.EodFinRes = currentEodResult;
-            }
-            double totalProfitLoss = 0;
-            foreach (var order in pickedOrders)
-            {
-               totalProfitLoss += order.ProfitLoss;
-            }
-            currentEodResult = currentEodResult + totalProfitLoss - calendarLog.SumCmsn;
-            calendarLog.EodFinRes = currentEodResult;
-         }
-      }
+      }            
 
       private static string ValidateAndSetPath(string[] args)
       {

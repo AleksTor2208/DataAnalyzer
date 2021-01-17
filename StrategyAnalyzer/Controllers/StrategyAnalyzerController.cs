@@ -1,10 +1,12 @@
 ﻿using log4net;
 using ModelLayer;
+using ModelLayer.Validation;
 using StrategyAnalyzer.DAL;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web.Http;
+using MarketData.Common;
 
 namespace StrategyAnalyzer.Controllers
 {
@@ -57,10 +59,18 @@ namespace StrategyAnalyzer.Controllers
          var globalStart = new DateTime(2015, 01, 5);
          var globalEnd = new DateTime(2019, 12, 31);
 
+         //needs validation
          var numericTrainPeriod = int.Parse(trainPeriod);
          var numericValidationPeriod = int.Parse(validationPeriod);
 
-         List<SlicePeriod> periodSlices = GetValidationSlices(globalStart, globalEnd, numericTrainPeriod, numericValidationPeriod);
+         List<SlicePeriod> periodSlices = Validation.GetValidationSlices(globalStart, globalEnd, numericTrainPeriod, numericValidationPeriod);
+
+         //this is what should be done
+         foreach (var slice in periodSlices)
+         {
+
+         }
+
 
          foreach (var oneSetup in allHistoryOrders)
          {
@@ -70,57 +80,43 @@ namespace StrategyAnalyzer.Controllers
             //splittedOrdersSetup - eto odna nastrojka podelennaja po slajsam.
             //todo:
             //- podschityvat' statistiki dlia kashdogo slajsa, 
-            //- znachit k etomu momentu neobhodimyje dannyje dolzhny byt' v baze
          }
          return Ok(new { periodSlices });
       }
 
-      private IEnumerable<SetupSlice> GetSplittedOrdersSetup(HistoricalOrders ordersSetup, List<SlicePeriod> slices)
+      private IEnumerable<SetupSlice> GetSplittedOrdersSetup(HistoricalOrders oneSetup, List<SlicePeriod> slices)
       {
-         //kazhduju nastrojku deliu na otrezki
-         var sliceStorage = new List<SetupSlice>();
+         //dlia kazhdogo vremennogo otrezka po zadannoj nastrojke nahozhu sootvetstvujushchije ordera 
+         var setupSlices = new List<SetupSlice>();
          foreach (var slice in slices)
          {
             var sliceStorageItem = new SetupSlice();
-            sliceStorageItem.PeriodSlice = slice;
-            sliceStorageItem.Orders = ordersSetup.Orders.Where(order => DateTime.Compare(order.AdjustedOpenDate, slice.TrainPeriod.LocalStart) >= 0 &&
+            sliceStorageItem.Slice = slice;
+
+            sliceStorageItem.TrainingOrders = oneSetup.Orders.Where(order => DateTime.Compare(order.AdjustedOpenDate, slice.TrainPeriod.LocalStart) >= 0 &&
                                                                         DateTime.Compare(order.AdjustedCloseDate, slice.TrainPeriod.LocalEnd) <= 0);
 
-            sliceStorage.Add(sliceStorageItem);
+            sliceStorageItem.ValidationOrders = oneSetup.Orders.Where(order => DateTime.Compare(order.AdjustedOpenDate, slice.ValidationPeriod.LocalStart) >= 0 &&
+                                                                        DateTime.Compare(order.AdjustedCloseDate, slice.ValidationPeriod.LocalEnd) <= 0);
+
+
+
+            //var StrategyResultsCalculator = new StrategyResultsCalculator();
+            //var annualGrowth = CalculateAnnualGrowth(historicalOrders);
+            //var maximumDrowDown = CalculateMaximumDrowdown(historicalOrders);
+            //var recovery = CalculateRecovery(annualGrowth, maximumDrowDown);
+            //var rSquared = CalculateRSquared(calendarLogs);
+
+
+            sliceStorageItem.Parameters = oneSetup.Parameters;
+
+
+
+
+            setupSlices.Add(sliceStorageItem);
+
          }
-         return sliceStorage;
-      }
-
-      private List<SlicePeriod> GetValidationSlices(DateTime globalStart, DateTime globalEnd, int trainPeriod, int validationPeriod)
-      {
-         bool isFirstSlice = true;
-         var slices = new List<SlicePeriod>();
-         while (!slices.Any(slice => DateTime.Compare(slice.ValidationPeriod.LocalEnd, globalEnd) > 0))
-         {
-            if (isFirstSlice)
-            {
-               var firstSlice = new SlicePeriod();
-               firstSlice.TrainPeriod.LocalStart = globalStart;             
-               firstSlice.TrainPeriod.LocalEnd = globalStart.AddDays(-1 + trainPeriod * 7);
-
-               firstSlice.ValidationPeriod.LocalStart = firstSlice.TrainPeriod.LocalEnd.AddDays(1);
-               firstSlice.ValidationPeriod.LocalEnd = firstSlice.ValidationPeriod.LocalStart.AddDays(-1 + validationPeriod * 7);
-               slices.Add(firstSlice);
-
-               isFirstSlice = false;
-            }
-            else
-            {
-               var slice = new SlicePeriod();
-               slice.TrainPeriod.LocalEnd = slices[slices.Count() - 1].ValidationPeriod.LocalEnd;
-               slice.TrainPeriod.LocalStart = slice.TrainPeriod.LocalEnd.AddDays(-7 * trainPeriod + 1);
-
-               slice.ValidationPeriod.LocalStart = slice.TrainPeriod.LocalEnd.AddDays(1);
-               slice.ValidationPeriod.LocalEnd = slice.ValidationPeriod.LocalStart.AddDays(-1 + validationPeriod * 7);
-               slices.Add(slice);
-            }
-         }
-         return slices;
-      }
+         return setupSlices;
+      }     
    }
 }

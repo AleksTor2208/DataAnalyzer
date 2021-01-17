@@ -47,48 +47,50 @@ namespace MarketDataLoader
          //FilterDefinition<TDocument> filter = 
          //OrdersDb.DeleteMany();
       }
-           
-      internal async Task<long> GetLinkNumber(string strategyName)
-      {
-         var resultInfoTable = _db.GetCollection<BsonDocument>(ResultsInfoTableName);
 
-         var filterForResults = Builders<BsonDocument>.Filter.Eq("StrategyName", strategyName);
-         var resultInfoData = await resultInfoTable.Find(filterForResults).ToListAsync();
-         var resultAsList = resultInfoData.Select(r => BsonSerializer.Deserialize<StrategyResultsDto>(r));
+      // GetLinkNumber() skoreje vsego nado budet vypelit'
 
-         var OrdersDb = _db.GetCollection<BsonDocument>(OrdersTableName);
-         var filterForOrders = Builders<BsonDocument>.Filter.Eq("Comment", strategyName);
-         var ordersData = await OrdersDb.Find(filterForOrders).ToListAsync();
-         var ordersAsList = ordersData.Select(r => BsonSerializer.Deserialize<HistoricalOrders>(r));
+      //internal async Task<long> GetLinkNumber(string strategyName)
+      //{
+      //   var resultInfoTable = _db.GetCollection<BsonDocument>(ResultsInfoTableName);
 
-         long currentLinkNumber;
-         List<long> resultsLinkNumbers;
-         List<long> ordersLinkNumbers;
-         if (resultAsList.Any())
-         {
-            resultsLinkNumbers = resultAsList.Select(r => r.Id).OrderByDescending(r => r).ToList();
-            currentLinkNumber = resultsLinkNumbers.First() + 1;
-         }
-         else
-         {
-            resultsLinkNumbers = new List<long>();
-            currentLinkNumber = 1;
-         }
-         if (ordersAsList.Any())
-         {
-            ordersLinkNumbers = ordersAsList.Select(r => r.LinkNumber).OrderByDescending(r => r).ToList();
-         }
-         else
-         {
-            ordersLinkNumbers = new List<long>();
-         }
-         
-         while (resultsLinkNumbers.Contains(currentLinkNumber) || ordersLinkNumbers.Contains(currentLinkNumber))
-         {
-            currentLinkNumber++;
-         }
-         return currentLinkNumber;
-      }
+      //   var filterForResults = Builders<BsonDocument>.Filter.Eq("StrategyName", strategyName);
+      //   var resultInfoData = await resultInfoTable.Find(filterForResults).ToListAsync();
+      //   var resultAsList = resultInfoData.Select(r => BsonSerializer.Deserialize<StrategyResultsDto>(r));
+
+      //   var OrdersDb = _db.GetCollection<BsonDocument>(OrdersTableName);
+      //   var filterForOrders = Builders<BsonDocument>.Filter.Eq("Comment", strategyName);
+      //   var ordersData = await OrdersDb.Find(filterForOrders).ToListAsync();
+      //   var ordersAsList = ordersData.Select(r => BsonSerializer.Deserialize<HistoricalOrders>(r));
+
+      //   long currentLinkNumber;
+      //   List<long> resultsLinkNumbers;
+      //   List<long> ordersLinkNumbers;
+      //   if (resultAsList.Any())
+      //   {
+      //      resultsLinkNumbers = resultAsList.Select(r => r.Id).OrderByDescending(r => r).ToList();
+      //      currentLinkNumber = resultsLinkNumbers.First() + 1;
+      //   }
+      //   else
+      //   {
+      //      resultsLinkNumbers = new List<long>();
+      //      currentLinkNumber = 1;
+      //   }
+      //   if (ordersAsList.Any())
+      //   {
+      //      ordersLinkNumbers = ordersAsList.Select(r => r.LinkNumber).OrderByDescending(r => r).ToList();
+      //   }
+      //   else
+      //   {
+      //      ordersLinkNumbers = new List<long>();
+      //   }
+
+      //   while (resultsLinkNumbers.Contains(currentLinkNumber) || ordersLinkNumbers.Contains(currentLinkNumber))
+      //   {
+      //      currentLinkNumber++;
+      //   }
+      //   return currentLinkNumber;
+      //}
 
       internal void LoadDataToResultsTable(BsonDocument resultsAsBSon)
       {
