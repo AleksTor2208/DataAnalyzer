@@ -6,16 +6,16 @@ using System.Threading.Tasks;
 
 namespace ModelLayer.Validation
 {
-   public class SetupSlice
+   public class SlicedSetup
    {
-      public SetupSlice()
+      public SlicedSetup()
       {
          TrainingOrders = new List<HistoricalOrderDto>();
-         ValidationOrders = new List<HistoricalOrderDto>();
+         ValidationOrders = new List<HistoricalOrderDto>();        
          Parameters = new Dictionary<string, string>();
       }
 
-      public SlicePeriod Slice { get; set; }
+      public SlicePeriod TimePeriod { get; set; }
       public IEnumerable<HistoricalOrderDto> TrainingOrders { get; set; }
       public Statistics TrainingOrdersStatistics { get; set; }
       public IEnumerable<HistoricalOrderDto> ValidationOrders { get; set; }

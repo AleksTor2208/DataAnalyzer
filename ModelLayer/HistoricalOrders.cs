@@ -7,16 +7,19 @@ using System.Threading.Tasks;
 
 namespace ModelLayer
 {
-   [BsonIgnoreExtraElements]
-   public class HistoricalOrders
-   {
-      public HistoricalOrders(IEnumerable<HistoricalOrderDto> orders)
-      {
-         Orders = orders;
-      }
+    [BsonIgnoreExtraElements]
+    public class HistoricalOrders
+    {
+        public HistoricalOrders()
+        { }
 
-      public IEnumerable<HistoricalOrderDto> Orders { get; private set; }
+        public HistoricalOrders(IEnumerable<HistoricalOrderDto> orders)
+        {
+            Orders = orders;
+        }
 
-      public IDictionary<string, string> Parameters { get; set; }
-   }
+        public IEnumerable<HistoricalOrderDto> Orders { get; private set; }
+
+        public IDictionary<string, string> Parameters { get; set; }
+    }
 }

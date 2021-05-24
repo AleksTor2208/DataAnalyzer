@@ -1,0 +1,98 @@
+﻿@model IEnumerable<WebApplication1.Models.TradeLogDto>
+
+@{
+    ViewBag.Title = "Home Page";
+}
+
+
+<table class="table">
+    <tr>
+        <th>
+            @Html.DisplayNameFor(model => model.Direction)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.OpenPrice)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.ClosePrice)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.ProfitLoss)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.ProfitLossInPips)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.OpenDate)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.CloseDate)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.FirstCommission)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.SecondCommission)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.DepositCurve)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.PercentChange)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.AdjustedOpenDate)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.AdjustedCloseDate)
+        </th>
+        <th></th>
+    </tr>
+
+
+    @foreach (var item in Model)
+    {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.Direction)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.OpenPrice)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.ClosePrice)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.ProfitLoss)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.ProfitLossInPips)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.OpenDate)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.CloseDate)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.FirstCommission)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.SecondCommission)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.DepositCurve)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.PercentChange)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.AdjustedOpenDate)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.AdjustedCloseDate)
+            </td>
+        </tr>
+    }
+</table>
+}

@@ -78,7 +78,7 @@ namespace MarketDataLoader
 
       internal void LoadFile(string htmlFile)
       {
-         _doc.LoadHtml(File.ReadAllText(htmlFile));
+         _doc.LoadHtml(htmlFile/*File.ReadAllText(htmlFile)*/);
       }
 
       private string[] ReadFromHtmlTable(TableType tableIndex)

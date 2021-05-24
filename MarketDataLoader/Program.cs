@@ -7,14 +7,14 @@ using System.Linq;
 using System.IO;
 using System;
 
-namespace MarketDataLoade
+namespace MarketDataLoader
 {
    class Program
    {
       static void Main(string[] args)
       {
-         var htmlFileManager = new HtmlFilesLoadManager(args);
-         htmlFileManager.ProcessFiles();
+         var htmlFileManager = new HtmlFilesLoadManager();
+         //htmlFileManager.ProcessFiles();
       }
    }
 }

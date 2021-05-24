@@ -1,0 +1,44 @@
+﻿<style>
+    .strategies-table {
+        position: absolute;
+        top: 180px;
+        left: 350px;
+
+    }
+    th, td {
+        height: 30px;
+        width: 60px;
+        position: relative;
+        font-size: 15px;
+    }
+    table {
+        border-spacing: 100px;
+        border-collapse: separate;
+    }
+</style>
+
+<div class="strategies-table">
+    <table class="table">
+        <tr>
+            <th>Strategy</th>
+            <th>Currency</th>
+            <th>TimeFrame</th>
+        </tr>
+        <tr>
+            <td>@Html.ActionLink("will_sar_xover_v1_eurusd", "TradeLog", "Home")</td>
+            <td>EUR/USD</td>
+            <td>Hourly</td>
+        </tr>
+        <tr>
+            <td>Best Strategy</td>
+            <td>RUB/USD</td>
+            <td>1 Minute</td>
+        </tr>
+        <tr>
+            <td>Million Strategy</td>
+            <td>GBP/USD</td>
+            <td>2 Minuts</td>
+        </tr>
+
+    </table>
+</div>
