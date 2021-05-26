@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 using System.IO;
 using MarketDataLoader;
 using WebApplication1.DAL;
+using WebApplication1.Helpers;
 using System.Net;
 
 namespace WebApplication1.Controllers
@@ -22,29 +23,29 @@ namespace WebApplication1.Controllers
     public class HomeController : Controller
     {
 
-        private IDataProvider _dbProvider;
+        private IDbConnection _dbConnection;
 
-        public IDataProvider DbProvider
+        public IDbConnection DbConnection
         {
             get
             {
-                if (_dbProvider == null)
+                if (_dbConnection == null)
                 {
-                    _dbProvider = new OrdersDataProvider(new MongoDbConnection());
+                    _dbConnection = new MongoDbConnection();
                 }
-                return _dbProvider;
+                return _dbConnection;
             }
         }
 
         public ActionResult Index()
         {
-            var strategies = DbProvider.GetStrategiesDistinct();
+            var strategies = DbConnection.GetOrdersDistinct();
             return View(strategies);
         }
 
         public async Task<ActionResult> Details(string strategyName)
         {
-            var startEndDateTemplate = await DbProvider.GetStartEndDates(strategyName);
+            var startEndDateTemplate = await DbConnection.GetStartEndDates(strategyName);
             startEndDateTemplate.StrategyName = strategyName;
             return View(new List<StartEndDateTemplate>() { startEndDateTemplate });
         }
@@ -119,8 +120,12 @@ namespace WebApplication1.Controllers
         [HttpGet]
         public ActionResult GenerateReport(string strategyName)
         {
-            var orders = DbProvider.GetOrdersByStrategyName(strategyName);
+            var orders = DbConnection.GetOrdersByStrategyName(strategyName);
+            var strategyInfo = DbConnection.GetStrategyInfoByStrategyName(strategyName);
 
+            var zipGenerator = new ZipGenerator();
+            zipGenerator.GenerateHistoricalOrdersZip(strategyName, orders);
+            zipGenerator.GenerateStrategyInfoZip(strategyName, orders);
             return new HttpStatusCodeResult(HttpStatusCode.OK);
         }
 

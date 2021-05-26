@@ -1,0 +1,2 @@
+OrdersPerMonth, AnualGrowth, MaxDrawDown, Recovery, RSquared, AvarageOrderInPips, StrategyName, Currency, Timeframe, Parameters, 
+35.74, -14.31, 62.32, 0, 0.79, -1.55, will_sar_xover_v2_mxu, EUR/USD, Hourly, System.Collections.Generic.Dictionary`2[System.String,System.String], 

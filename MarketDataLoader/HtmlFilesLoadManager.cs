@@ -39,72 +39,73 @@ namespace MarketDataLoader
             var writeHeaders = true;
             //foreach (string htmlFile in Directory.EnumerateFiles(_folderPath, HtmlExtensionFile))
             //{
-                Log.InfoFormat("Start reading from html file. Input path is: {0}", fileName);
-                _htmlReader.LoadFile(htmlFile);
-                _htmlReader.SelectTablesFromFile(htmlFile);
-                var orderLogs = _htmlReader.ReadOrderLogs();
+            Log.InfoFormat("Start reading from html file. Input path is: {0}", fileName);
+            _htmlReader.LoadFile(htmlFile);
+            _htmlReader.SelectTablesFromFile(htmlFile);
+            var orderLogs = _htmlReader.ReadOrderLogs();
 
-                var historicalOrders = _htmlReader.ReadHistoricalOrders(TableType.ClosedOrders,
-                                                       OrdersTableHeaders.ClosedOrdersHeaders, new ClosedOrdersConverter());
+            var historicalOrders = _htmlReader.ReadHistoricalOrders(TableType.ClosedOrders,
+                                                   OrdersTableHeaders.ClosedOrdersHeaders, new ClosedOrdersConverter());
 
-                var openedOrders = _htmlReader.ReadHistoricalOrders(TableType.OpenedOrders,
-                                                       OrdersTableHeaders.OpenedOrdersHeaders, new OpenedOrdersConverter());
-                if (openedOrders.Any())
-                {
-                    historicalOrders.AddRange(openedOrders);
-                }
+            var openedOrders = _htmlReader.ReadHistoricalOrders(TableType.OpenedOrders,
+                                                   OrdersTableHeaders.OpenedOrdersHeaders, new OpenedOrdersConverter());
+            if (openedOrders.Any())
+            {
+                historicalOrders.AddRange(openedOrders);
+            }
 
-                var currency = _htmlReader.GetCurrency();
-                var strategyName = _htmlReader.GetStrategyName();
+            var currency = _htmlReader.GetCurrency();
+            var strategyName = _htmlReader.GetStrategyName();
 
-                var basicInfo = _htmlReader.ReadDetailsTables(TableType.BasicInfo);
-                var paramsInfo = _htmlReader.ReadDetailsTables(TableType.ParamsInfo);
-                var detailsInfo = _htmlReader.ReadDetailsTables(TableType.DetailsInfo);
+            var basicInfo = _htmlReader.ReadDetailsTables(TableType.BasicInfo);
+            var paramsInfo = _htmlReader.ReadDetailsTables(TableType.ParamsInfo);
+            var detailsInfo = _htmlReader.ReadDetailsTables(TableType.DetailsInfo);
 
-                // setupInfo is agreggated data for preparing calendarLogs
-                SetupInfo setupInfo = PrepareSetupInfo(htmlFile, basicInfo, paramsInfo, detailsInfo, strategyName, currency);
+            // setupInfo is agreggated data for preparing calendarLogs
+            SetupInfo setupInfo = PrepareSetupInfo(htmlFile, basicInfo, paramsInfo, detailsInfo, strategyName, currency);
 
-                SetupAdjustedOrderDates(historicalOrders);
-                var calendarLogsConstructor = new CalendarLogsCreator(historicalOrders);
-                var calendarLogs = calendarLogsConstructor.SetupCalendarLogs(orderLogs, setupInfo);
+            SetupAdjustedOrderDates(historicalOrders);
+            var calendarLogsConstructor = new CalendarLogsCreator(historicalOrders);
+            var calendarLogs = calendarLogsConstructor.SetupCalendarLogs(orderLogs, setupInfo);
 
-                EnrichHistoricalOrdersWithCommissions(calendarLogs, historicalOrders);
+            EnrichHistoricalOrdersWithCommissions(calendarLogs, historicalOrders);
 
-                //Calculate Deposit curve separately because it will be needed to calculate drowdowns!
-                CalculateDepositCurve(historicalOrders, setupInfo.InitialDeposit);
+            //Calculate Deposit curve separately because it will be needed to calculate drowdowns!
+            CalculateDepositCurve(historicalOrders, setupInfo.InitialDeposit);
 
-                CalculatePercentChange(historicalOrders, setupInfo.InitialDeposit);
+            CalculatePercentChange(historicalOrders, setupInfo.InitialDeposit);
 
-                // should be modified, commissions should be already calculated in Enrichment step
-                var strategyResultsCalculator = new StrategyResultsCalculator(setupInfo);
-                var strategyResults = strategyResultsCalculator.Calculate(historicalOrders,
-                                                                        calendarLogs, paramsInfo);
+            // should be modified, commissions should be already calculated in Enrichment step
+            var strategyResultsCalculator = new StrategyResultsCalculator(setupInfo);
+            var strategyResults = strategyResultsCalculator.Calculate(historicalOrders,
+                                                                    calendarLogs, paramsInfo);
+            strategyResults.StrategyName = strategyName;
 
-                var strategyResultsAsBSon = strategyResults.ToBsonDocument();
-                // This method is to render historical orders in csv file if needed
+            var strategyResultsAsBSon = strategyResults.ToBsonDocument();
+            // This method is to render historical orders in csv file if needed
 
-                var historicalOrdersBson = BSonConverter.GenerateHistoricalOrdersAsBSon(historicalOrders, paramsInfo, strategyName);
+            var historicalOrdersBson = BSonConverter.GenerateHistoricalOrdersAsBSon(historicalOrders, paramsInfo, strategyName);
 
-                var ordersInfo = BSonConverter.GenerateOrdersInfoDocument(basicInfo, paramsInfo, detailsInfo);
-                try
-                {
-                    Log.InfoFormat("Start writing data from {0} to mongo.", fileName);
-                    _dbConnection.LoadOrdersInfo(ordersInfo);
-                    _dbConnection.LoadOrders(historicalOrdersBson);
-                    _dbConnection.LoadDataToResultsTable(strategyResultsAsBSon);
-                    Log.InfoFormat("Processing {0} file finished successfully.", fileName);
+            var ordersInfo = BSonConverter.GenerateOrdersInfoDocument(basicInfo, paramsInfo, detailsInfo);
+            try
+            {
+                Log.InfoFormat("Start writing data from {0} to mongo.", fileName);
+                _dbConnection.LoadOrdersInfo(ordersInfo);
+                _dbConnection.LoadOrders(historicalOrdersBson);
+                _dbConnection.LoadDataToResultsTable(strategyResultsAsBSon);
+                Log.InfoFormat("Processing {0} file finished successfully.", fileName);
 
-                    //Log.InfoFormat("Start writing data from {0} to csv file.", htmlFile);
-                    //GenerateHistoricalOrdersAsTable(historicalOrders);
-                    //GenerateStrategyResultsAsTable(strategyResults, writeHeaders);
-                    //writeHeaders = false;
-                    //Log.InfoFormat("Processing {0} file finished successfully.", htmlFile);
-                }
-                catch (Exception e)
-                {
-                    Log.ErrorFormat("Error during {0} file loading. Error message: {1}", htmlFile, e.Message);
-                    throw;
-                }
+                //Log.InfoFormat("Start writing data from {0} to csv file.", htmlFile);
+                //GenerateHistoricalOrdersAsTable(historicalOrders);
+                //GenerateStrategyResultsAsTable(strategyResults, writeHeaders);
+                //writeHeaders = false;
+                //Log.InfoFormat("Processing {0} file finished successfully.", htmlFile);
+            }
+            catch (Exception e)
+            {
+                Log.ErrorFormat("Error during {0} file loading. Error message: {1}", htmlFile, e.Message);
+                throw;
+            }
             //}
         }
 

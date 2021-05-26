@@ -77,6 +77,13 @@ namespace WebApplication1.DAL
                 .Project(new ProjectionDefinitionBuilder<HistoricalOrders>().Expression(x => x)).ToList();
         }
 
+        public IEnumerable<StrategyResultsDto> GetStrategyInfoByStrategyName(string strategyName)
+        {
+            return _db.GetCollection<StrategyResultsDto>(ResultsInfoTableName)
+                .Find(d => d.StrategyName == strategyName)
+                .Project(new ProjectionDefinitionBuilder<StrategyResultsDto>().Expression(x => x)).ToList();
+        }
+
         private async Task<TValue> GetFieldValue<TEntity, TValue>(string strategyName, Expression<Func<TEntity, TValue>> fieldExpression) where TEntity : HistoricalOrders
         {
             var propertyValue = await _db.GetCollection<TEntity>(OrdersTableName)

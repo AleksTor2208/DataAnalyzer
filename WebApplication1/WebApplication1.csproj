@@ -195,14 +195,16 @@
     <Compile Include="App_Start\FilterConfig.cs" />
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="Controllers\HomeController.cs" />
-    <Compile Include="DAL\IDataProvider.cs" />
+    <Compile Include="Convertors\HistoricalOrdersToFlatConvertor.cs" />
     <Compile Include="DAL\IDbConnection.cs" />
     <Compile Include="DAL\MongoDbConnection.cs" />
-    <Compile Include="DAL\OrdersDataProvider.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="Helpers\CSVFileDefinitionMap.cs" />
+    <Compile Include="Helpers\HistoricalOrdersMap.cs" />
+    <Compile Include="Helpers\ZipGenerator.cs" />
+    <Compile Include="Models\HistoricalOrdersFlat.cs" />
     <Compile Include="Models\StartEndDateTemplate.cs" />
     <Compile Include="Models\StrategyTemplate.cs" />
     <Compile Include="Models\TradeLog.cs" />

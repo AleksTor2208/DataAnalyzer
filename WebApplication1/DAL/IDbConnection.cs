@@ -16,5 +16,7 @@ namespace WebApplication1.DAL
       Task<StartEndDateTemplate> GetStartEndDates(string strategyName);
 
       IEnumerable<HistoricalOrders> GetOrdersByStrategyName(string strategyName);
+
+      IEnumerable<StrategyResultsDto> GetStrategyInfoByStrategyName(string strategyName);
    }
 }
