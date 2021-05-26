@@ -1,44 +1,34 @@
-﻿<style>
-    .strategies-table {
-        position: absolute;
-        top: 180px;
-        left: 350px;
+﻿@model IEnumerable<WebApplication1.Models.StrategyTemplate>
 
-    }
-    th, td {
-        height: 30px;
-        width: 60px;
-        position: relative;
-        font-size: 15px;
-    }
-    table {
-        border-spacing: 100px;
-        border-collapse: separate;
-    }
-</style>
+@{
+    ViewBag.Title = "Index";
+}
 
-<div class="strategies-table">
-    <table class="table">
-        <tr>
-            <th>Strategy</th>
-            <th>Currency</th>
-            <th>TimeFrame</th>
-        </tr>
-        <tr>
-            <td>@Html.ActionLink("will_sar_xover_v1_eurusd", "TradeLog", "Home")</td>
-            <td>EUR/USD</td>
-            <td>Hourly</td>
-        </tr>
-        <tr>
-            <td>Best Strategy</td>
-            <td>RUB/USD</td>
-            <td>1 Minute</td>
-        </tr>
-        <tr>
-            <td>Million Strategy</td>
-            <td>GBP/USD</td>
-            <td>2 Minuts</td>
-        </tr>
+<h2>Index</h2>
 
-    </table>
-</div>
+<p>
+    @Html.ActionLink("Create New", "Create")
+</p>
+<table class="table">
+    <tr>
+        <th>
+            @Html.DisplayNameFor(model => model.StrategyName)
+        </th>
+        <th></th>
+    </tr>
+
+@foreach (var item in Model) {
+    <tr>
+        <td>
+            @Html.DisplayFor(modelItem => item.StrategyName)
+        </td>
+        <td>
+            @*@Html.ActionLink("Edit", "Edit", new { /* id=item.PrimaryKey */ }) |*@
+            @*<button onclick="location.href = 'Details';" id="myButton" class="submit-button">Home</button>*@
+            @Html.ActionLink("Details", "Details", new { strategyName = item.StrategyName })
+            @*@Html.ActionLink("Delete", "Delete", new { /* id=item.PrimaryKey */ })*@
+        </td>
+    </tr>
+}
+
+</table>

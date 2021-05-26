@@ -14,14 +14,39 @@ using System.IO.Compression;
 using System.Threading.Tasks;
 using System.IO;
 using MarketDataLoader;
+using WebApplication1.DAL;
+using System.Net;
 
 namespace WebApplication1.Controllers
 {
     public class HomeController : Controller
     {
+
+        private IDataProvider _dbProvider;
+
+        public IDataProvider DbProvider
+        {
+            get
+            {
+                if (_dbProvider == null)
+                {
+                    _dbProvider = new OrdersDataProvider(new MongoDbConnection());
+                }
+                return _dbProvider;
+            }
+        }
+
         public ActionResult Index()
         {
-            return View();
+            var strategies = DbProvider.GetStrategiesDistinct();
+            return View(strategies);
+        }
+
+        public async Task<ActionResult> Details(string strategyName)
+        {
+            var startEndDateTemplate = await DbProvider.GetStartEndDates(strategyName);
+            startEndDateTemplate.StrategyName = strategyName;
+            return View(new List<StartEndDateTemplate>() { startEndDateTemplate });
         }
 
         private List<TradeLogDto> ReadData(string path)
@@ -83,7 +108,7 @@ namespace WebApplication1.Controllers
 
             return View();
         }
-
+              
         public ActionResult Import()
         {
             ViewBag.Message = "Your contact page.";
@@ -91,16 +116,16 @@ namespace WebApplication1.Controllers
             return View();
         }
 
-        public ActionResult TestImport()
+        [HttpGet]
+        public ActionResult GenerateReport(string strategyName)
         {
-            ViewBag.Message = "Your contact page.";
+            var orders = DbProvider.GetOrdersByStrategyName(strategyName);
 
-            return View();
+            return new HttpStatusCodeResult(HttpStatusCode.OK);
         }
 
-        
         [HttpPost]
-        public async Task<ActionResult> ProcessImport(HttpPostedFileBase file)
+        public ActionResult ProcessImport(HttpPostedFileBase file)
         {
             ViewBag.Message = "Your contact page.";
 
@@ -116,21 +141,9 @@ namespace WebApplication1.Controllers
                         var htmlDocument = reader.ReadToEnd();
                         htmlFileManager.ProcessFile(entry.ToString(), htmlDocument);
                     }
-
-                    
-                    /* unzippedEntryStream = entry.Open();*/ // .Open will return a stream
-                                                             // Process entry data here
                 }
             }
-
-            
-            
-            //var rawMessage = await httpRequest.Content.ReadAsStringAsync();
-            //foreach (var file in Request.Files)
-            //{
-            //    var temp = file;
-            //}
-            return View();
+            return new HttpStatusCodeResult(HttpStatusCode.OK);
         }
     }
 }

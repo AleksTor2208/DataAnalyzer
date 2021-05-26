@@ -18,6 +18,8 @@ namespace ModelLayer
             Orders = orders;
         }
 
+        public string StrategyName { get; set; }
+
         public IEnumerable<HistoricalOrderDto> Orders { get; private set; }
 
         public IDictionary<string, string> Parameters { get; set; }

@@ -83,7 +83,7 @@ namespace MarketDataLoader
                 var strategyResultsAsBSon = strategyResults.ToBsonDocument();
                 // This method is to render historical orders in csv file if needed
 
-                var historicalOrdersBson = BSonConverter.GenerateHistoricalOrdersAsBSon(historicalOrders, paramsInfo);
+                var historicalOrdersBson = BSonConverter.GenerateHistoricalOrdersAsBSon(historicalOrders, paramsInfo, strategyName);
 
                 var ordersInfo = BSonConverter.GenerateOrdersInfoDocument(basicInfo, paramsInfo, detailsInfo);
                 try

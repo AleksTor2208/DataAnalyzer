@@ -1,12 +1,7 @@
 ﻿<!DOCTYPE html>
 <html>
 <style>
-    .validation-popup {        
-        position: absolute;
-        border: 1px solid #f1f1f1;
-        right: 50px;
-        top: 100px;
-    }
+    
 
     #validationFormTemplate {
         display: none;
@@ -29,17 +24,33 @@
     }
 
     #navbar-menu-styling {
-        position: absolute;
+        /*position: absolute;
         top: 50px;
         margin-left: 250px;
-        position: absolute;
+        position: absolute;*/
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
     }
+
+    li a {
+        display: block;
+        padding: 8px;
+        background-color: #dddddd;
+    }
+
     .logo {
         width: 20px;
         height: 40px;
         position:absolute;
         right: 70px;
     }
+
+    .nav-bar-menu-id {
+        float: center;
+    }
+
 </style>
 <head>
     <meta charset="utf-8" />
@@ -47,20 +58,27 @@
     <title>@ViewBag.Title - My ASP.NET Application</title>
     @Styles.Render("~/Content/css")
     @Scripts.Render("~/bundles/modernizr")
+
+    
 </head>
 <body>
     <div class="navbar-menu">
         <ul class="nav navbar-nav" id="navbar-menu-styling">
             <li><img src="~/Content/logo_vsatrader_transparent.png" class="logo" alt="logo_vsatrader"></li>
-            <li><a href="https://vsatrader.ru/">Главная</a></li>
-            <li>@Html.ActionLink("Детали", "About", "Home")</li>
-            <li>@Html.ActionLink("Контакты", "Contact", "Home")</li>
-            <li>@Html.ActionLink("Импорт", "Import", "Home")</li>
-            <li>@Html.ActionLink("TestImport", "TestImport", "Home")</li>
-            <li><button type="button" class="validation-button" onclick="openvalidationFormTemplate()">Validate</button></li>
         </ul>
     </div>
-    <div class="container body-content">    
+
+    <ul class="nav nav-tabs @*topnav-centered*@">
+        <li role="presentation" class="active">@Html.ActionLink("Главная", "Index", "Home")</li>
+        <li role="presentation">@Html.ActionLink("Контакты", "Contact", "Home")</li>
+        <li role="presentation">@Html.ActionLink("Импорт", "Import", "Home")</li>
+    </ul>
+    
+        @*<li><button type="button" class="validation-button" onclick="openvalidationFormTemplate()">Validate</button></li>*@
+
+
+    <!--</div>-->
+    <div class="container body-content">
         @RenderBody()
     </div>
 
@@ -83,40 +101,36 @@
             <input type="submit" id="createAssetSubmitButton" value="submit">
         </form>
     </div>
+
+    <script>
+        $('#validationForm').submit(function (e) {
+
+            var form = $('#validationForm').serialize();
+            alert("data: " + form);
+            $.ajax({
+                url: "/Home/Validate",
+                contentType: 'application/json',
+                data: form,
+                processData: false,
+                type: 'GET',
+
+                success: function (resp, status, xhr) {
+                    console.log(xhr.responseText);
+                },
+                error: function (textStatus) {
+                    console.log(textStatus);
+                }
+            });
+            e.preventDefault();
+            ToogleFormVisibility("createAssetInput");
+        });
+
+        
+    </script>>
+
     @Scripts.Render("~/bundles/jquery")
     @Scripts.Render("~/bundles/bootstrap")
     @Styles.Render("~/Content/css")
     @RenderSection("scripts", required: false)
 </body>
-
-<script>
-    var formData = JSON.stringify($("#myForm").serializeArray());
-
-    function openvalidationFormTemplate() {
-        console.log("I'm in OpenvalidationFormTemplate function!");
-        document.getElementById("validationFormTemplate").style.display = "block";
-    }
-
-    $('#validationForm').submit(function (e) {
-
-        var form = $('#validationForm').serialize();
-        alert("data: " + form);
-        $.ajax({
-            url: "/Home/Validate",
-            contentType: 'application/json',
-            data: form,
-            processData: false,
-            type: 'GET',
-
-            success: function (resp, status, xhr) {
-                console.log(xhr.responseText);
-            },
-            error: function (textStatus) {
-                console.log(textStatus);
-            }
-        });
-        e.preventDefault();
-        ToogleFormVisibility("createAssetInput");
-    });
-</script>        
 </html>

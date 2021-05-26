@@ -1,0 +1,119 @@
+﻿@model IEnumerable<WebApplication1.Models.StartEndDateTemplate>
+
+@{
+    ViewBag.Title = "Details";
+}
+
+<script rel="javascript" type="text/javascript" href="js/jquery-1.11.3.min.js"></script>
+<h2>Details</h2>
+
+<style>
+    .logo {
+        width: 40px;
+        height: 40px;
+        position: absolute;
+        left: 695px;
+        position: relative;
+    }
+
+    .validation-popup {
+        position: absolute;
+        border: 1px solid #f1f1f1;
+        right: 50px;
+        top: 100px;
+    }
+
+    #generate_report {
+        left: 700px;
+        position: relative;
+        /*left: 600px;*/
+    }
+</style>
+
+<p>
+
+
+
+</p>
+<table class="table thead-light">
+    <tr>
+        <th>
+            @Html.DisplayNameFor(model => model.StrategyName)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.StartDate)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.EndDate)
+        </th>
+        <th></th>
+    </tr>
+
+    @foreach (var item in Model)
+    {
+        <tr>
+            <td>
+                @*@Html.DisplayFor(modelItem => item.StrategyName)*@
+                <label id="hidden_strategy_name_id">@item.StrategyName</label>
+                @*<input type="hidden" id="hidden_strategy_name_id" name="hidden_strategy_name" value=item.StrategyName>*@
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.StartDate)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.EndDate)
+            </td>
+        </tr>
+    }
+
+</table>
+
+<table>
+    <tr>
+        <td><img src="~/Content/excel.jfif" class="logo" alt="excel_img"></td>
+        <td><a href="" id="generate_report" onclick="generate_report()">Generate Report</a></td>
+    </tr>    
+</table>
+
+<button type="button" class="validation-button" onclick="openvalidationFormTemplate()">Validate</button>
+<div class="validation-popup" id="validationFormTemplate">
+    <form action="~/Home/Validate" id="validationForm">
+        <label for="sname">Strategy Name:</label>
+        <input type="text" id="sname" name="sname"><br>
+        <label for="currency">Currency: </label>
+        <input type="text" id="currency" name="currency"><br>
+        <label for="timeframe">Timeframe: </label>
+        <input type="text" id="timeframe" name="timeframe"><br>
+        <label for="startDate">StartDate: </label>
+        <input type="datetime" id="startDate" name="startDate"><br>
+        <label for="endDate">EndDate:</label>
+        <input type="datetime" id="endDate" name="endDate"><br>
+        <label for="trainPeriod">TrainPeriod:</label>
+        <input type="text" id="trainPeriod" name="trainPeriod"><br>
+        <label for="validationPeriod">ValidationPeriod:</label>
+        <input type="text" id="validationPeriod" name="validationPeriod"><br>
+        <input type="submit" id="createAssetSubmitButton" value="submit">
+    </form>
+</div>
+
+<script>
+    function openvalidationFormTemplate() {
+        console.log("I'm in OpenvalidationFormTemplate function!");
+        document.getElementById("validationFormTemplate").style.display = "block";
+    }
+
+    function generate_report() {
+        var stratName = document.getElementById("hidden_strategy_name_id");
+        //var stratNameJson = { "strategyName":  };
+        var url = "GenerateReport?strategyName=" + stratName.innerHTML;
+        alert("url is:" + url);
+        
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+        xhr.send();
+    }
+</script>
+
+@Scripts.Render("~/bundles/jquery")
+@Scripts.Render("~/bundles/bootstrap")
+@Styles.Render("~/Content/css")
