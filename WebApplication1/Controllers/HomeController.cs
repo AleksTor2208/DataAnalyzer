@@ -17,6 +17,8 @@ using MarketDataLoader;
 using WebApplication1.DAL;
 using WebApplication1.Helpers;
 using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
 
 namespace WebApplication1.Controllers
 {
@@ -118,15 +120,95 @@ namespace WebApplication1.Controllers
         }
 
         [HttpGet]
-        public ActionResult GenerateReport(string strategyName)
+        public FileResult GenerateReport(string strategyName)
         {
-            var orders = DbConnection.GetOrdersByStrategyName(strategyName);
-            var strategyInfo = DbConnection.GetStrategyInfoByStrategyName(strategyName);
+            string outputFolder = @"C:\Users\alto\source\repos\WebApiDemo\DataAnalyzer\testData";
 
-            var zipGenerator = new ZipGenerator();
-            zipGenerator.GenerateHistoricalOrdersZip(strategyName, orders);
-            zipGenerator.GenerateStrategyInfoZip(strategyName, orders);
-            return new HttpStatusCodeResult(HttpStatusCode.OK);
+            //FileStreamResult fileStreamResult;
+            //var orders = DbConnection.GetOrdersByStrategyName(strategyName);
+            //var strategyInfo = DbConnection.GetStrategyInfoByStrategyName(strategyName);
+
+            //var zipGenerator = new ZipGenerator();
+            //using (var memoryStream = new MemoryStream())
+            //{
+            //    zipGenerator.GenerateHistoricalOrdersZip(strategyName, orders, memoryStream);
+            //    using (var fileStream = GenerateFileSteam(memoryStream, outputFolder, strategyName))
+            //    {
+            //        fileStreamResult = File(fileStream, "application/octet-stream", $"{strategyName}.zip");
+            //    }
+                
+            //    //using (var fileStream = new FileStream($"{outputFolder}\\{strategyName}.zip", FileMode.Create))
+            //    //{
+            //    //    memoryStream.Seek(0, SeekOrigin.Begin);
+            //    //    memoryStream.CopyTo(fileStream);
+
+            //    //    memoryStream.Seek(0, SeekOrigin.Begin);
+            //    //    memoryStream.CopyTo(outputFileStream);
+            //    //    //response = new HttpResponseMessage(HttpStatusCode.OK);
+            //    //    //response.Content = new StreamContent(fileStream);//new ByteArrayContent(memoryStream.ToArray());//new StreamContent(fileStream);
+            //    //    //response.Content.Headers.ContentDisposition = new ContentDispositionHeaderValue("attachment");
+            //    //    //response.Content.Headers.ContentDisposition.FileName = $"{strategyName}.zip";
+            //    //    //response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/octetstream");
+            //    //    //response.Headers.Add("fileName", $"{strategyName}.zip");
+
+            //    //    //System.Web.HttpContext.Current
+            //    //    //var request = HttpContext.Current.HttpRequest;
+            //    //    //this.HttpContext.ApplicationInstance.Context.Request;
+
+            //    //    //Request.Headers.
+            //    //    //long fileSize = memoryStream.Length;
+            //    //    //byte[] buffer = new byte[(int)fileSize];
+            //    //    //memoryStream.Read(buffer, 0, (int)fileSize);
+            //    //    ////memoryStream.Close();
+            //    //    //Response.ContentType = "application/zip";
+            //    //    //Response.AddHeader("content-disposition", "attachment; filename=" + strategyName);
+            //    //    //Response.Write("<b>File Contents: </b>");
+            //    //    //Response.BinaryWrite(buffer);
+            //    //}
+                
+            //}
+            //ZipFile zipFile = new ZipFile()
+            //return fileStreamResult
+            byte[] finalResult = System.IO.File.ReadAllBytes($"{outputFolder}\\{strategyName}.zip");
+            return File(finalResult, "application/octet-stream", $"{strategyName}.zip");
+            //return File(outputFileStream, "application/octet-stream", $"{strategyName}.zip");
+            //zipGenerator.GenerateStrategyInfoZip(strategyName, orders);
+            //return new HttpStatusCodeResult(HttpStatusCode.OK);
+        }
+
+        public FileResult GenerateReportNew()
+        {
+            string path = @"C:\Users\alto\source\repos\WebApiDemo\DataAnalyzer\testData\will_sar_xover_v2_mxu.zip";
+
+            //FileStreamResult fileStreamResult;
+            //var orders = DbConnection.GetOrdersByStrategyName(strategyName);
+            //var strategyInfo = DbConnection.GetStrategyInfoByStrategyName(strategyName);
+
+            //var zipGenerator = new ZipGenerator();
+            //using (var memoryStream = new MemoryStream())
+            //{
+            //    zipGenerator.GenerateHistoricalOrdersZip(strategyName, orders, memoryStream);
+            //    using (var fileStream = GenerateFileSteam(memoryStream, outputFolder, strategyName))
+            //    {
+            //        fileStreamResult = File(fileStream, "application/octet-stream", $"{strategyName}.zip");
+            //    }
+
+
+            //}
+            
+
+            byte[] finalResult = System.IO.File.ReadAllBytes(path);
+            return File(finalResult, "application/zip", "will_sar_xover_v2_mxu.zip");
+          
+        }
+
+        private FileStream GenerateFileSteam(MemoryStream memoryStream, string outputFolder, string strategyName)
+        {
+            var fileStream = new FileStream($"{outputFolder}\\{strategyName}.zip", FileMode.Create);
+            
+            memoryStream.Seek(0, SeekOrigin.Begin);
+            memoryStream.CopyTo(fileStream);
+            return fileStream;
         }
 
         [HttpPost]

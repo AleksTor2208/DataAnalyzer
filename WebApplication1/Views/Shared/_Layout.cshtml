@@ -103,27 +103,27 @@
     </div>
 
     <script>
-        $('#validationForm').submit(function (e) {
+        //$('#validationForm').submit(function (e) {
 
-            var form = $('#validationForm').serialize();
-            alert("data: " + form);
-            $.ajax({
-                url: "/Home/Validate",
-                contentType: 'application/json',
-                data: form,
-                processData: false,
-                type: 'GET',
+        //    var form = $('#validationForm').serialize();
+        //    alert("data: " + form);
+        //    $.ajax({
+        //        url: "/Home/Validate",
+        //        contentType: 'application/json',
+        //        data: form,
+        //        processData: false,
+        //        type: 'GET',
 
-                success: function (resp, status, xhr) {
-                    console.log(xhr.responseText);
-                },
-                error: function (textStatus) {
-                    console.log(textStatus);
-                }
-            });
-            e.preventDefault();
-            ToogleFormVisibility("createAssetInput");
-        });
+        //        success: function (resp, status, xhr) {
+        //            console.log(xhr.responseText);
+        //        },
+        //        error: function (textStatus) {
+        //            console.log(textStatus);
+        //        }
+        //    });
+        //    e.preventDefault();
+        //    ToogleFormVisibility("createAssetInput");
+        //});
 
         
     </script>>

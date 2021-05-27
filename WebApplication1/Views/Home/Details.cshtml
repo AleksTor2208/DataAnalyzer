@@ -4,6 +4,7 @@
     ViewBag.Title = "Details";
 }
 
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.0.0/jquery.min.js"></script>
 <script rel="javascript" type="text/javascript" href="js/jquery-1.11.3.min.js"></script>
 <h2>Details</h2>
 
@@ -71,9 +72,11 @@
 <table>
     <tr>
         <td><img src="~/Content/excel.jfif" class="logo" alt="excel_img"></td>
-        <td><a href="" id="generate_report" onclick="generate_report()">Generate Report</a></td>
-    </tr>    
+        <td><a download id="generate_report" class="btn btn-light">Generate Report</a></td>
+    </tr>
 </table>
+
+<a href="GenerateReportNew" target="_blank" class="btn btn-primary" style="margin-top:20px;">Download Zip</a>
 
 <button type="button" class="validation-button" onclick="openvalidationFormTemplate()">Validate</button>
 <div class="validation-popup" id="validationFormTemplate">
@@ -97,21 +100,147 @@
 </div>
 
 <script>
+
+    var report_generate_el = document.getElementById('generate_report');
+
+
     function openvalidationFormTemplate() {
         console.log("I'm in OpenvalidationFormTemplate function!");
         document.getElementById("validationFormTemplate").style.display = "block";
     }
 
-    function generate_report() {
-        var stratName = document.getElementById("hidden_strategy_name_id");
-        //var stratNameJson = { "strategyName":  };
-        var url = "GenerateReport?strategyName=" + stratName.innerHTML;
-        alert("url is:" + url);
-        
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', url, true);
-        xhr.send();
+    function download(filename, data) {
+
+        console.log("I'm in download function");
+        var blob = new Blob([data], { type: "application/octetstream" });
+        var url = window.URL || window.webkitURL;
+        link = url.createObjectURL(blob);
+
+        var element = document.createElement('a');
+        element.setAttribute('href', link);
+        element.setAttribute('download', filename);
+        document.body.appendChild(element);
+        element.click();
+        //document.body.removeChild(element);
     }
+
+    $("#generate_report").on("click", function () {
+
+        // Data to post
+        data = {
+            ids: [1, 2, 3, 4, 5]
+        };
+
+        console.log("did I ever managed to get here?");
+        stratName = document.getElementById("hidden_strategy_name_id");
+        url = "GenerateReport?strategyName=" + stratName.innerHTML;
+        console.log("url is: " + url);
+        // Use XMLHttpRequest instead of Jquery $ajax
+        xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function () {
+            console.log("did I ever manage to get that far into ready state?");
+            console.log("request status is: " + xhttp.status);
+            var a;
+            if (xhttp.readyState === 4 && xhttp.status === 200) {
+                // Trick for making downloadable link
+                a = document.createElement('a');
+                a.href = window.URL.createObjectURL(xhttp.response);
+                // Give filename you wish to download
+                a.download = "test.zip";
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+            }
+        };
+        // Post data to URL which handles post request
+        xhttp.open('GET', url);
+        xhttp.setRequestHeader("Content-Type", "application/octetstream");
+        // You should set responseType as blob for binary responses
+        xhttp.responseType = 'blob';
+        xhttp.send(JSON.stringify(data));
+    });
+
+
+
+    //report_generate_el.addEventListener('click', function() {
+
+    //
+    //    ////var stratNameJson = { "strategyName":  };
+    //    var url = "GenerateReport?strategyName=" + stratName.innerHTML;
+    //    alert("url is:" + url);
+
+    //    var request = new XMLHttpRequest();
+    //    request.addEventListener("load", reqListener);
+    //    request.open('GET', url);
+    //    request.send();
+    //request.responseType = "blob";
+    //var req = new XMLHttpRequest();
+    //req.open("GET", url);
+    //req.responseType = "blob";
+    //req.addEventListener("load", function (event) {
+    //    console.log("something");
+    //    alert("wot ze fag");
+    //    var blob = req.response;
+    //    var fileName = req.getResponseHeader("fileName") //if you have the fileName header available
+    //    var link = document.createElement('a');
+    //    link.href = window.URL.createObjectURL(blob);
+    //    link.download = fileName;
+    //    link.click();
+    //});
+    //console.log("sending request");
+    //req.send();
+
+
+    //request.addEventListener("load", function (e) {
+    //    alert("wot ze fag");
+    //    console.log("I'm in load event listener. Request status is: " + request.status);
+    //    if (request.status == 200) {
+    //        alert("I'm in 200 status response");
+    //        /*request.responseType = "blob";*/
+    //        var fileName = "test" + ".zip";
+    //        console.log("fileName is: " + fileName);
+    //        var headers = request.getAllResponseHeaders();
+    //        for (var i = 0; i < headers.length; i++) {
+    //            console.log("headers:")
+    //            console.log(headers[i])
+    //        }
+    //        download(fileName, request.response);
+    //    }
+    //});
+
+    ////request.responseType = "application/zip";
+    ////xhr.addEventListener("load", function (e) {
+    ////    alert("Inside Load event");
+    ////    if (e.currentTarget.status < 400) {
+
+    ////        alert("Load callback - success!");
+    ////        //var data = xhr.response;
+    ////        //download("test.zip", data);
+    ////    }
+    ////    else
+    ////        alert("Load callback - error!");
+    ////}, false);
+    ////xhr.addEventListener("error", function (e) {
+    ////    alert("Error callback");
+    ////}, false);
+
+    ////req.onreadystatechange = function () {
+
+    ////    if (req.status == 200)
+    ////        alert("request return 200 status");
+    ////    else
+    ////        alert("Error loading page\n");
+
+    ////};
+    //console.log("sending request");
+
+    //});
+
+    function reqListener() {
+        console.log("something ++");
+        console.log(this.responseText);
+    }
+
 </script>
 
 @Scripts.Render("~/bundles/jquery")

@@ -14,37 +14,29 @@ namespace WebApplication1.Helpers
 {
     public class ZipGenerator
     {
-        internal void GenerateHistoricalOrdersZip(string strategyName, IEnumerable<HistoricalOrders> orders)
+        internal void GenerateHistoricalOrdersZip(string strategyName, IEnumerable<HistoricalOrders> orders, MemoryStream memoryStream)
         {
-            string outputFolder = @"C:\Users\alto\source\repos\WebApiDemo\DataAnalyzer\testData";
-            using (var memoryStream = new MemoryStream())
+            //string outputFolder = @"C:\Users\alto\source\repos\WebApiDemo\DataAnalyzer\testData";
+            
+            using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
             {
-                using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
+                int count = 1;
+                foreach (var oneSetup in orders)
                 {
-                    int count = 1;
-                    foreach (var oneSetup in orders)
+                    var fileName = $"TradeLogs_{strategyName}_setup{count}.csv";
+                    var flatOrders = new HistoricalOrdersToFlatConvertor().Convert(strategyName, oneSetup);
+                    var demoFile = archive.CreateEntry($"{fileName}");
+
+                    using (var entryStream = demoFile.Open())
+                    using (StreamWriter writer = new StreamWriter(entryStream))
+                    using (CsvWriter csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
                     {
-                        var fileName = $"TradeLogs_{strategyName}_setup{count}.csv";
-                        var flatOrders = new HistoricalOrdersToFlatConvertor().Convert(strategyName, oneSetup);
-                        var demoFile = archive.CreateEntry($"{fileName}");
-
-                        using (var entryStream = demoFile.Open())
-                        using (StreamWriter writer = new StreamWriter(entryStream))
-                        using (CsvWriter csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+                        csv.Configuration.RegisterClassMap<HistoricalOrdersMap>();
                         {
-                            csv.Configuration.RegisterClassMap<HistoricalOrdersMap>();
-                            {
-                                csv.WriteRecords(flatOrders);
-                            }
+                            csv.WriteRecords(flatOrders);
                         }
-                        count++;
                     }
-                }
-
-                using (var fileStream = new FileStream($"{outputFolder}\\{strategyName}.zip", FileMode.Open, FileAccess.))
-                {
-                    memoryStream.Seek(0, SeekOrigin.Begin);
-                    memoryStream.CopyTo(fileStream);
+                    count++;
                 }
             }
         }
