@@ -124,6 +124,8 @@
         //document.body.removeChild(element);
     }
 
+    var stratName_global = document.getElementById("hidden_strategy_name_id").innerHTML;
+
     $("#generate_report").on("click", function () {
 
         // Data to post
@@ -132,21 +134,23 @@
         };
 
         console.log("did I ever managed to get here?");
-        stratName = document.getElementById("hidden_strategy_name_id");
-        url = "GenerateReport?strategyName=" + stratName.innerHTML;
+        console.log("strategy global: " + stratName_global);
+        stratName = document.getElementById("hidden_strategy_name_id").innerHTML;
+        url = "GenerateReport?strategyName=" + stratName;
         console.log("url is: " + url);
         // Use XMLHttpRequest instead of Jquery $ajax
         xhttp = new XMLHttpRequest();
         xhttp.onreadystatechange = function () {
             console.log("did I ever manage to get that far into ready state?");
-            console.log("request status is: " + xhttp.status);
+            console.log("stratName is: " + stratName);
+            console.log("stratName is: " + stratName);
             var a;
             if (xhttp.readyState === 4 && xhttp.status === 200) {
                 // Trick for making downloadable link
                 a = document.createElement('a');
                 a.href = window.URL.createObjectURL(xhttp.response);
                 // Give filename you wish to download
-                a.download = "test.zip";
+                a.download = `${stratName}.zip`;
                 a.style.display = 'none';
                 document.body.appendChild(a);
                 a.click();

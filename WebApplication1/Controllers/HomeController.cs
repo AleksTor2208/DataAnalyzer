@@ -122,58 +122,17 @@ namespace WebApplication1.Controllers
         [HttpGet]
         public FileResult GenerateReport(string strategyName)
         {
-            string outputFolder = @"C:\Users\alto\source\repos\WebApiDemo\DataAnalyzer\testData";
+            byte[] resultArray;
+            var orders = DbConnection.GetOrdersByStrategyName(strategyName);
+            var strategyInfo = DbConnection.GetStrategyInfoByStrategyName(strategyName);
 
-            //FileStreamResult fileStreamResult;
-            //var orders = DbConnection.GetOrdersByStrategyName(strategyName);
-            //var strategyInfo = DbConnection.GetStrategyInfoByStrategyName(strategyName);
-
-            //var zipGenerator = new ZipGenerator();
-            //using (var memoryStream = new MemoryStream())
-            //{
-            //    zipGenerator.GenerateHistoricalOrdersZip(strategyName, orders, memoryStream);
-            //    using (var fileStream = GenerateFileSteam(memoryStream, outputFolder, strategyName))
-            //    {
-            //        fileStreamResult = File(fileStream, "application/octet-stream", $"{strategyName}.zip");
-            //    }
-                
-            //    //using (var fileStream = new FileStream($"{outputFolder}\\{strategyName}.zip", FileMode.Create))
-            //    //{
-            //    //    memoryStream.Seek(0, SeekOrigin.Begin);
-            //    //    memoryStream.CopyTo(fileStream);
-
-            //    //    memoryStream.Seek(0, SeekOrigin.Begin);
-            //    //    memoryStream.CopyTo(outputFileStream);
-            //    //    //response = new HttpResponseMessage(HttpStatusCode.OK);
-            //    //    //response.Content = new StreamContent(fileStream);//new ByteArrayContent(memoryStream.ToArray());//new StreamContent(fileStream);
-            //    //    //response.Content.Headers.ContentDisposition = new ContentDispositionHeaderValue("attachment");
-            //    //    //response.Content.Headers.ContentDisposition.FileName = $"{strategyName}.zip";
-            //    //    //response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/octetstream");
-            //    //    //response.Headers.Add("fileName", $"{strategyName}.zip");
-
-            //    //    //System.Web.HttpContext.Current
-            //    //    //var request = HttpContext.Current.HttpRequest;
-            //    //    //this.HttpContext.ApplicationInstance.Context.Request;
-
-            //    //    //Request.Headers.
-            //    //    //long fileSize = memoryStream.Length;
-            //    //    //byte[] buffer = new byte[(int)fileSize];
-            //    //    //memoryStream.Read(buffer, 0, (int)fileSize);
-            //    //    ////memoryStream.Close();
-            //    //    //Response.ContentType = "application/zip";
-            //    //    //Response.AddHeader("content-disposition", "attachment; filename=" + strategyName);
-            //    //    //Response.Write("<b>File Contents: </b>");
-            //    //    //Response.BinaryWrite(buffer);
-            //    //}
-                
-            //}
-            //ZipFile zipFile = new ZipFile()
-            //return fileStreamResult
-            byte[] finalResult = System.IO.File.ReadAllBytes($"{outputFolder}\\{strategyName}.zip");
-            return File(finalResult, "application/octet-stream", $"{strategyName}.zip");
-            //return File(outputFileStream, "application/octet-stream", $"{strategyName}.zip");
-            //zipGenerator.GenerateStrategyInfoZip(strategyName, orders);
-            //return new HttpStatusCodeResult(HttpStatusCode.OK);
+            var zipGenerator = new ZipGenerator();
+            using (var memoryStream = new MemoryStream())
+            {
+                zipGenerator.GenerateHistoricalOrdersZip(strategyName, orders, memoryStream);
+                resultArray = memoryStream.ToArray();
+            }           
+            return File(resultArray, "application/octet-stream", $"{strategyName}.zip");
         }
 
         public FileResult GenerateReportNew()
