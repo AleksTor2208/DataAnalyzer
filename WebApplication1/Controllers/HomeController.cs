@@ -123,13 +123,13 @@ namespace WebApplication1.Controllers
         public FileResult GenerateReport(string strategyName)
         {
             byte[] resultArray;
-            var orders = DbConnection.GetOrdersByStrategyName(strategyName);
+            var tradeLogs = DbConnection.GetOrdersByStrategyName(strategyName);
             var strategyInfo = DbConnection.GetStrategyInfoByStrategyName(strategyName);
 
             var zipGenerator = new ZipGenerator();
             using (var memoryStream = new MemoryStream())
             {
-                zipGenerator.GenerateHistoricalOrdersZip(strategyName, orders, memoryStream);
+                zipGenerator.GenerateHistoricalOrdersZip(strategyName, tradeLogs, memoryStream);
                 resultArray = memoryStream.ToArray();
             }           
             return File(resultArray, "application/octet-stream", $"{strategyName}.zip");

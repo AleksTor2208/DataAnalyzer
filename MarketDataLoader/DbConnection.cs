@@ -17,7 +17,7 @@ namespace MarketDataLoader
    class DbConnection
    {
       private readonly IMongoDatabase _db;
-      private const string OrdersTableName = "Orders";
+      private const string OrdersTableName = "TradeLogs";
       private const string OrdersInfoTableName = "OrdersInfo";
       private const string ResultsInfoTableName = "ResultsInfo";
 

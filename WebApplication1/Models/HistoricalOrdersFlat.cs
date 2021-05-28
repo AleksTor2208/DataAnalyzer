@@ -40,5 +40,15 @@ namespace WebApplication1.Models
         public double SecondCommission { get; set; }
 
         public string Parameters { get; set; }
+
+        //Strategy Results
+        public string OrdersPerMonth { get; set; }
+        public string AnualGrowth { get; set; }
+        public string MaxDrawDown { get; set; }
+        public string Recovery { get; set; }
+        public string RSquared { get; set; }
+        public string AvarageOrderInPips { get; set; }
+        public string Currency { get; set; }
+        public string Timeframe { get; set; }
     }
 }

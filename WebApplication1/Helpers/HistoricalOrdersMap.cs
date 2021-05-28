@@ -26,6 +26,17 @@ namespace WebApplication1.Helpers
             Map(m => m.AdjustedOpenDate).Name("Adjusted Open Date");
             Map(m => m.AdjustedCloseDate).Name("Adjusted Close Date");
             Map(m => m.Parameters).Name("Parameters");
-        }
+
+            //Strategy Results mapping
+            Map(m => m.OrdersPerMonth).Name("OrdersPerMonth");
+            Map(m => m.AnualGrowth).Name("AnualGrowth");
+            Map(m => m.MaxDrawDown).Name("MaxDrawDown");
+            Map(m => m.Recovery).Name("Recovery");
+            Map(m => m.RSquared).Name("RSquared");
+            Map(m => m.AvarageOrderInPips).Name("AvarageOrderInPips");
+            Map(m => m.Currency).Name("Currency");
+            Map(m => m.Timeframe).Name("Timeframe");
+            
+    }
     }
 }

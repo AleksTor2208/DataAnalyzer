@@ -84,15 +84,15 @@ namespace MarketDataLoader
             var strategyResultsAsBSon = strategyResults.ToBsonDocument();
             // This method is to render historical orders in csv file if needed
 
-            var historicalOrdersBson = BSonConverter.GenerateHistoricalOrdersAsBSon(historicalOrders, paramsInfo, strategyName);
+            var historicalOrdersBson = BSonConverter.GenerateHistoricalOrdersAsBSon(historicalOrders, paramsInfo, strategyName, strategyResults);
 
             var ordersInfo = BSonConverter.GenerateOrdersInfoDocument(basicInfo, paramsInfo, detailsInfo);
             try
             {
                 Log.InfoFormat("Start writing data from {0} to mongo.", fileName);
-                _dbConnection.LoadOrdersInfo(ordersInfo);
+                //_dbConnection.LoadOrdersInfo(ordersInfo);
                 _dbConnection.LoadOrders(historicalOrdersBson);
-                _dbConnection.LoadDataToResultsTable(strategyResultsAsBSon);
+                //_dbConnection.LoadDataToResultsTable(strategyResultsAsBSon);
                 Log.InfoFormat("Processing {0} file finished successfully.", fileName);
 
                 //Log.InfoFormat("Start writing data from {0} to csv file.", htmlFile);

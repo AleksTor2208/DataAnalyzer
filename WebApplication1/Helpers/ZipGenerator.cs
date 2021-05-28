@@ -14,14 +14,14 @@ namespace WebApplication1.Helpers
 {
     public class ZipGenerator
     {
-        internal void GenerateHistoricalOrdersZip(string strategyName, IEnumerable<HistoricalOrders> orders, MemoryStream memoryStream)
+        internal void GenerateHistoricalOrdersZip(string strategyName, IEnumerable<HistoricalOrders> tradeLogs, MemoryStream memoryStream)
         {
             //string outputFolder = @"C:\Users\alto\source\repos\WebApiDemo\DataAnalyzer\testData";
             
             using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
             {
                 int count = 1;
-                foreach (var oneSetup in orders)
+                foreach (var oneSetup in tradeLogs)
                 {
                     var fileName = $"TradeLogs_{strategyName}_setup{count}.csv";
                     var flatOrders = new HistoricalOrdersToFlatConvertor().Convert(strategyName, oneSetup);
